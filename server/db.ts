@@ -1,11 +1,25 @@
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, 
+  users, 
+  pessoas, 
+  Pessoa, 
+  InsertPessoa,
+  projetos,
+  Projeto,
+  InsertProjeto,
+  atividades,
+  Atividade,
+  InsertAtividade,
+  subtarefas,
+  Subtarefa,
+  InsertSubtarefa
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -89,4 +103,211 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ===== PESSOAS =====
+
+export async function getAllPessoas(): Promise<Pessoa[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(pessoas);
+}
+
+export async function getPessoaById(id: number): Promise<Pessoa | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(pessoas).where(eq(pessoas.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createPessoa(data: InsertPessoa): Promise<Pessoa> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(pessoas).values(data);
+  return await getPessoaById(Number((result as any).insertId)) as Pessoa;
+}
+
+export async function updatePessoa(id: number, data: Partial<InsertPessoa>): Promise<Pessoa> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(pessoas).set(data).where(eq(pessoas.id, id));
+  return await getPessoaById(id) as Pessoa;
+}
+
+export async function deletePessoa(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(pessoas).where(eq(pessoas.id, id));
+}
+
+// ===== PROJETOS =====
+
+export async function getAllProjetos(): Promise<Projeto[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(projetos);
+}
+
+export async function getProjetoById(id: number): Promise<Projeto | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(projetos).where(eq(projetos.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createProjeto(data: InsertProjeto): Promise<Projeto> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(projetos).values(data);
+  return await getProjetoById(Number((result as any).insertId)) as Projeto;
+}
+
+export async function updateProjeto(id: number, data: Partial<InsertProjeto>): Promise<Projeto> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(projetos).set(data).where(eq(projetos.id, id));
+  return await getProjetoById(id) as Projeto;
+}
+
+export async function deleteProjeto(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(projetos).where(eq(projetos.id, id));
+}
+
+// ===== ATIVIDADES =====
+
+export async function getAllAtividades(): Promise<Atividade[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(atividades);
+}
+
+export async function getAtividadesByProjetoId(projetoId: number): Promise<Atividade[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(atividades).where(eq(atividades.projetoId, projetoId));
+}
+
+export async function getAtividadeById(id: number): Promise<Atividade | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(atividades).where(eq(atividades.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createAtividade(data: InsertAtividade): Promise<Atividade> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(atividades).values(data);
+  return await getAtividadeById(Number((result as any).insertId)) as Atividade;
+}
+
+export async function updateAtividade(id: number, data: Partial<InsertAtividade>): Promise<Atividade> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(atividades).set(data).where(eq(atividades.id, id));
+  return await getAtividadeById(id) as Atividade;
+}
+
+export async function deleteAtividade(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(atividades).where(eq(atividades.id, id));
+}
+
+// ===== SUBTAREFAS =====
+
+export async function getAllSubtarefas(): Promise<Subtarefa[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(subtarefas);
+}
+
+export async function getSubtarefasByAtividadeId(atividadeId: number): Promise<Subtarefa[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(subtarefas).where(eq(subtarefas.atividadeId, atividadeId));
+}
+
+export async function getSubtarefaById(id: number): Promise<Subtarefa | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subtarefas).where(eq(subtarefas.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createSubtarefa(data: InsertSubtarefa): Promise<Subtarefa> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(subtarefas).values(data);
+  return await getSubtarefaById(Number((result as any).insertId)) as Subtarefa;
+}
+
+export async function updateSubtarefa(id: number, data: Partial<InsertSubtarefa>): Promise<Subtarefa> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(subtarefas).set(data).where(eq(subtarefas.id, id));
+  return await getSubtarefaById(id) as Subtarefa;
+}
+
+export async function deleteSubtarefa(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(subtarefas).where(eq(subtarefas.id, id));
+}
+
+// ===== FUNÇÕES AUXILIARES =====
+
+/**
+ * Calcula o progresso de um projeto baseado nas atividades
+ */
+export async function calcularProgressoProjeto(projetoId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const atividadesDoProjeto = await getAtividadesByProjetoId(projetoId);
+  if (atividadesDoProjeto.length === 0) return 0;
+  
+  let totalProgresso = 0;
+  for (const atividade of atividadesDoProjeto) {
+    const subtarefasDaAtividade = await getSubtarefasByAtividadeId(atividade.id);
+    if (subtarefasDaAtividade.length > 0) {
+      // Se tem subtarefas, calcula a média das subtarefas
+      const somaSubtarefas = subtarefasDaAtividade.reduce((sum, st) => sum + (st.progresso || 0), 0);
+      totalProgresso += somaSubtarefas / subtarefasDaAtividade.length;
+    } else {
+      // Se não tem subtarefas, usa o progresso da própria atividade
+      totalProgresso += atividade.progresso || 0;
+    }
+  }
+  
+  return Math.round(totalProgresso / atividadesDoProjeto.length);
+}
+
+/**
+ * Calcula o progresso de uma atividade baseado nas subtarefas
+ */
+export async function calcularProgressoAtividade(atividadeId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const subtarefasDaAtividade = await getSubtarefasByAtividadeId(atividadeId);
+  if (subtarefasDaAtividade.length === 0) {
+    const atividade = await getAtividadeById(atividadeId);
+    return atividade?.progresso || 0;
+  }
+  
+  const somaSubtarefas = subtarefasDaAtividade.reduce((sum, st) => sum + (st.progresso || 0), 0);
+  return Math.round(somaSubtarefas / subtarefasDaAtividade.length);
+}
+
+/**
+ * Determina o status baseado no progresso
+ */
+export function calcularStatus(progresso: number): string {
+  if (progresso === -1) return "Cancelado";
+  if (progresso === 0) return "Não Iniciado";
+  if (progresso > 0 && progresso < 100) return "Em Andamento";
+  if (progresso === 100) return "Concluído";
+  return "Não Iniciado";
+}
+
