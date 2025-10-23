@@ -171,3 +171,44 @@
     }
   }
 }
+
+
+/* Inputs maiores nas tabelas */
+table input[type="text"],
+table input[type="email"],
+table input[type="date"],
+table input[type="number"],
+table textarea,
+table select {
+  min-height: 44px;
+  font-size: 15px;
+  padding: 10px 14px;
+}
+
+/* Validação visual - campos obrigatórios vazios */
+input.required-empty,
+select.required-empty,
+textarea.required-empty {
+  border-color: #ef4444 !important;
+  border-width: 2px !important;
+  background-color: #fef2f2;
+}
+
+input.required-empty:focus,
+select.required-empty:focus,
+textarea.required-empty:focus {
+  border-color: #dc2626 !important;
+  ring-color: #fca5a5;
+}
+
+/* Linha marcada para remoção */
+tr.marked-for-deletion {
+  background-color: #fee2e2 !important;
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+
+tr.marked-for-deletion:hover {
+  background-color: #fecaca !important;
+}
+
