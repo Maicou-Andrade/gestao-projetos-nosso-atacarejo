@@ -9,6 +9,7 @@ import Pessoas from "./pages/Pessoas";
 import Projetos from "./pages/Projetos";
 import Atividades from "./pages/Atividades";
 import Subtarefas from "./pages/Subtarefas";
+import Indicadores from "./pages/Indicadores";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/projetos"} component={Projetos} />
       <Route path={"/atividades"} component={Atividades} />
       <Route path={"/subtarefas"} component={Subtarefas} />
+      <Route path={"/indicadores"} component={Indicadores} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
