@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { FolderKanban, Trash2, Save } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Projetos() {
@@ -18,6 +19,8 @@ export default function Projetos() {
   const createProjeto = trpc.projetos.create.useMutation();
   const updateProjeto = trpc.projetos.update.useMutation();
   const deleteProjeto = trpc.projetos.delete.useMutation();
+
+  const [editedProjetos, setEditedProjetos] = useState<Record<number, any>>({});
 
   const handleAdd = async () => {
     try {
@@ -34,21 +37,40 @@ export default function Projetos() {
     }
   };
 
-  const handleUpdate = async (id: number, data: any) => {
+  const handleChange = (id: number, field: string, value: any) => {
+    setEditedProjetos((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveAll = async () => {
     try {
-      await updateProjeto.mutateAsync({ id, ...data });
+      const updates = Object.entries(editedProjetos);
+      if (updates.length === 0) {
+        toast.info("Nenhuma alteração para salvar");
+        return;
+      }
+
+      for (const [idStr, data] of updates) {
+        const id = parseInt(idStr);
+        await updateProjeto.mutateAsync({ id, ...data });
+      }
+
+      setEditedProjetos({});
       await refetch();
+      toast.success("✓ Alterações Salvas!", { duration: 2000 });
     } catch (error) {
-      toast.error("Erro ao atualizar projeto");
+      toast.error("Erro ao salvar alterações");
     }
   };
 
   const handleDelete = async (id: number, codigo: string) => {
-    // Verificar se há atividades vinculadas
-    const atividadesVinculadas = atividades?.filter(
-      (a) => a.projetoId === id
-    );
-    
+    const atividadesVinculadas = atividades?.filter((a) => a.projetoId === id);
+
     if (atividadesVinculadas && atividadesVinculadas.length > 0) {
       toast.error(
         `Este projeto possui ${atividadesVinculadas.length} atividade(s) vinculada(s). Para remover este projeto, primeiro exclua todas as atividades vinculadas a ele na aba 'Atividades'.`,
@@ -58,7 +80,7 @@ export default function Projetos() {
     }
 
     if (!confirm(`Deseja realmente excluir o projeto ${codigo}?`)) return;
-    
+
     try {
       await deleteProjeto.mutateAsync({ id });
       await refetch();
@@ -68,8 +90,8 @@ export default function Projetos() {
     }
   };
 
-  const handleSave = () => {
-    toast.success("✓ Alterações Salvas!", { duration: 2000 });
+  const getValue = (projeto: any, field: string) => {
+    return editedProjetos[projeto.id]?.[field] ?? projeto[field] ?? "";
   };
 
   if (isLoading) {
@@ -96,7 +118,7 @@ export default function Projetos() {
               + Novo Projeto
             </Button>
             <Button
-              onClick={handleSave}
+              onClick={handleSaveAll}
               className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-6 text-lg rounded-xl"
             >
               <Save className="h-5 w-5 mr-2" />
@@ -112,9 +134,7 @@ export default function Projetos() {
               <p className="text-xl text-gray-500 font-medium">
                 Nenhum projeto cadastrado
               </p>
-              <p className="text-gray-400">
-                Clique em "Novo Projeto" para começar
-              </p>
+              <p className="text-gray-400">Clique em "Novo Projeto" para começar</p>
             </div>
           </div>
         ) : (
@@ -171,9 +191,9 @@ export default function Projetos() {
                     >
                       <td className="px-4 py-3">
                         <Input
-                          value={projeto.codigo}
+                          value={getValue(projeto, "codigo")}
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { codigo: e.target.value })
+                            handleChange(projeto.id, "codigo", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                           required
@@ -181,9 +201,9 @@ export default function Projetos() {
                       </td>
                       <td className="px-4 py-3">
                         <Input
-                          value={projeto.nome || ""}
+                          value={getValue(projeto, "nome")}
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { nome: e.target.value })
+                            handleChange(projeto.id, "nome", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                           required
@@ -191,18 +211,18 @@ export default function Projetos() {
                       </td>
                       <td className="px-4 py-3">
                         <Input
-                          value={projeto.descricao || ""}
+                          value={getValue(projeto, "descricao")}
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { descricao: e.target.value })
+                            handleChange(projeto.id, "descricao", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <Select
-                          value={projeto.prioridade || "Média"}
+                          value={getValue(projeto, "prioridade") || "Média"}
                           onValueChange={(value) =>
-                            handleUpdate(projeto.id, { prioridade: value })
+                            handleChange(projeto.id, "prioridade", value)
                           }
                         >
                           <SelectTrigger className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]">
@@ -218,9 +238,9 @@ export default function Projetos() {
                       </td>
                       <td className="px-4 py-3">
                         <Input
-                          value={projeto.responsaveis || ""}
+                          value={getValue(projeto, "responsaveis")}
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { responsaveis: e.target.value })
+                            handleChange(projeto.id, "responsaveis", e.target.value)
                           }
                           placeholder="IDs separados por vírgula"
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
@@ -231,11 +251,13 @@ export default function Projetos() {
                           type="date"
                           value={
                             projeto.inicioPlanejado
-                              ? new Date(projeto.inicioPlanejado).toISOString().split("T")[0]
+                              ? new Date(projeto.inicioPlanejado)
+                                  .toISOString()
+                                  .split("T")[0]
                               : ""
                           }
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { inicioPlanejado: e.target.value })
+                            handleChange(projeto.id, "inicioPlanejado", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                         />
@@ -245,20 +267,22 @@ export default function Projetos() {
                           type="date"
                           value={
                             projeto.fimPlanejado
-                              ? new Date(projeto.fimPlanejado).toISOString().split("T")[0]
+                              ? new Date(projeto.fimPlanejado)
+                                  .toISOString()
+                                  .split("T")[0]
                               : ""
                           }
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { fimPlanejado: e.target.value })
+                            handleChange(projeto.id, "fimPlanejado", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <Input
-                          value={projeto.status || ""}
+                          value={getValue(projeto, "status")}
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { status: e.target.value })
+                            handleChange(projeto.id, "status", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                         />
@@ -270,9 +294,9 @@ export default function Projetos() {
                       </td>
                       <td className="px-4 py-3">
                         <Input
-                          value={projeto.observacoes || ""}
+                          value={getValue(projeto, "observacoes")}
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { observacoes: e.target.value })
+                            handleChange(projeto.id, "observacoes", e.target.value)
                           }
                           className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                         />
@@ -280,9 +304,12 @@ export default function Projetos() {
                       <td className="px-4 py-3 text-center">
                         <input
                           type="checkbox"
-                          checked={projeto.aprovacao}
+                          checked={
+                            editedProjetos[projeto.id]?.aprovacao ??
+                            projeto.aprovacao
+                          }
                           onChange={(e) =>
-                            handleUpdate(projeto.id, { aprovacao: e.target.checked })
+                            handleChange(projeto.id, "aprovacao", e.target.checked)
                           }
                           className="h-5 w-5 accent-[#005CA9]"
                         />

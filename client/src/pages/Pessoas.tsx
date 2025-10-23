@@ -2,7 +2,8 @@ import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { Users, Trash2, UserX } from "lucide-react";
+import { Users, Trash2, UserX, Save } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function Pessoas() {
@@ -10,6 +11,8 @@ export default function Pessoas() {
   const createPessoa = trpc.pessoas.create.useMutation();
   const updatePessoa = trpc.pessoas.update.useMutation();
   const deletePessoa = trpc.pessoas.delete.useMutation();
+
+  const [editedPessoas, setEditedPessoas] = useState<Record<number, any>>({});
 
   const handleAdd = async () => {
     try {
@@ -30,12 +33,34 @@ export default function Pessoas() {
     }
   };
 
-  const handleUpdate = async (id: number, data: any) => {
+  const handleChange = (id: number, field: string, value: any) => {
+    setEditedPessoas((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveAll = async () => {
     try {
-      await updatePessoa.mutateAsync({ id, ...data });
+      const updates = Object.entries(editedPessoas);
+      if (updates.length === 0) {
+        toast.info("Nenhuma alteração para salvar");
+        return;
+      }
+
+      for (const [idStr, data] of updates) {
+        const id = parseInt(idStr);
+        await updatePessoa.mutateAsync({ id, ...data });
+      }
+
+      setEditedPessoas({});
       await refetch();
+      toast.success("✓ Alterações Salvas!", { duration: 2000 });
     } catch (error) {
-      toast.error("Erro ao atualizar pessoa");
+      toast.error("Erro ao salvar alterações");
     }
   };
 
@@ -48,6 +73,10 @@ export default function Pessoas() {
     } catch (error) {
       toast.error("Erro ao inativar pessoa");
     }
+  };
+
+  const getValue = (pessoa: any, field: string) => {
+    return editedPessoas[pessoa.id]?.[field] ?? pessoa[field] ?? "";
   };
 
   if (isLoading) {
@@ -68,12 +97,21 @@ export default function Pessoas() {
             <Users className="h-8 w-8" />
             Pessoas
           </h2>
-          <Button
-            onClick={handleAdd}
-            className="bg-[#F5B800] hover:bg-[#F5B800]/90 text-[#005CA9] font-semibold px-6 py-6 text-lg rounded-xl"
-          >
-            + Nova Pessoa
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={handleAdd}
+              className="bg-[#F5B800] hover:bg-[#F5B800]/90 text-[#005CA9] font-semibold px-6 py-6 text-lg rounded-xl"
+            >
+              + Nova Pessoa
+            </Button>
+            <Button
+              onClick={handleSaveAll}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-6 text-lg rounded-xl"
+            >
+              <Save className="h-5 w-5 mr-2" />
+              Salvar
+            </Button>
+          </div>
         </div>
 
         {pessoasAtivas.length === 0 ? (
@@ -118,91 +156,91 @@ export default function Pessoas() {
                   >
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.codigo || ""}
+                        value={getValue(pessoa, "codigo")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { codigo: e.target.value })
+                          handleChange(pessoa.id, "codigo", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.nome || ""}
+                        value={getValue(pessoa, "nome")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { nome: e.target.value })
+                          handleChange(pessoa.id, "nome", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.email || ""}
+                        value={getValue(pessoa, "email")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { email: e.target.value })
+                          handleChange(pessoa.id, "email", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.telefone || ""}
+                        value={getValue(pessoa, "telefone")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { telefone: e.target.value })
+                          handleChange(pessoa.id, "telefone", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.cargo || ""}
+                        value={getValue(pessoa, "cargo")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { cargo: e.target.value })
+                          handleChange(pessoa.id, "cargo", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.departamento || ""}
+                        value={getValue(pessoa, "departamento")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { departamento: e.target.value })
+                          handleChange(pessoa.id, "departamento", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.setor || ""}
+                        value={getValue(pessoa, "setor")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { setor: e.target.value })
+                          handleChange(pessoa.id, "setor", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.status || ""}
+                        value={getValue(pessoa, "status")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { status: e.target.value })
+                          handleChange(pessoa.id, "status", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        checked={pessoa.ativo}
+                        checked={getValue(pessoa, "ativo")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { ativo: e.target.checked })
+                          handleChange(pessoa.id, "ativo", e.target.checked)
                         }
                         className="h-5 w-5 accent-[#005CA9]"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <Input
-                        value={pessoa.observacoes || ""}
+                        value={getValue(pessoa, "observacoes")}
                         onChange={(e) =>
-                          handleUpdate(pessoa.id, { observacoes: e.target.value })
+                          handleChange(pessoa.id, "observacoes", e.target.value)
                         }
                         className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                       />
@@ -211,7 +249,7 @@ export default function Pessoas() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleInactivate(pessoa.id, pessoa.nome || "esta pessoa")}
+                        onClick={() => handleInactivate(pessoa.id, pessoa.nome || "")}
                         className="hover:bg-red-50"
                       >
                         <UserX className="h-5 w-5 text-red-600" />
@@ -223,12 +261,6 @@ export default function Pessoas() {
             </table>
           </div>
         )}
-
-        <div className="flex justify-end">
-          <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-6 text-lg rounded-xl">
-            💾 Salvar
-          </Button>
-        </div>
       </div>
     </MainLayout>
   );
