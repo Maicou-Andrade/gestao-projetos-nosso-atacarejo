@@ -515,7 +515,9 @@ export default function Atividades() {
                   const difHoras = qtdHoras - (data.horasUsadas || 0);
                   const difHorasColor = difHoras >= 0 ? "text-green-600" : "text-red-600";
 
-                  const responsavelNome = pessoasAtivas.find((p) => p.id === data.responsavelId)?.nome || "";
+                  // Usar responsavelId do atividade original se não estiver editando
+                  const responsavelIdToUse = isNew ? data.responsavelId : (editingRows[id]?.responsavelId ?? atividade.responsavelId);
+                  const responsavelNome = pessoasAtivas.find((p) => p.id === responsavelIdToUse)?.nome || "";
                   const projetoVinculado = projetosAtivos.find((p) => p.id === data.projetoId);
                   const projetoAprovado = projetoVinculado?.aprovacao || false;
 

@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, codigo, tarefa, responsaveisTarefa FROM atividades LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QLSPjpjHCdPShhN.6826122015af --database VhNyHqj95H5CZvQTkbi6FP --execute SELECT id, codigo, tarefa, responsaveisTarefa FROM atividades LIMIT 10;",
+  "rows": [
+    {
+      "id": "60031",
+      "codigo": "AT003",
+      "tarefa": "Desenvolvimento Módulo Financeiro",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60032",
+      "codigo": "AT001",
+      "tarefa": "Levantamento de Requisitos",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60033",
+      "codigo": "AT002",
+      "tarefa": "Configuração Ambiente",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60034",
+      "codigo": "AT005",
+      "tarefa": "Migração Base de Dados",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60035",
+      "codigo": "AT004",
+      "tarefa": "Análise Infraestrutura Atual",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60036",
+      "codigo": "AT006",
+      "tarefa": "Testes de Performance",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60037",
+      "codigo": "AT009",
+      "tarefa": "Integração APIs",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60038",
+      "codigo": "AT010",
+      "tarefa": "Planejamento Portal",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60039",
+      "codigo": "AT008",
+      "tarefa": "Desenvolvimento Frontend",
+      "responsaveisTarefa": "1"
+    },
+    {
+      "id": "60040",
+      "codigo": "AT007",
+      "tarefa": "Design UI/UX",
+      "responsaveisTarefa": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigo\ttarefa\tresponsaveisTarefa\n60031\tAT003\tDesenvolvimento Módulo Financeiro\t1\n60032\tAT001\tLevantamento de Requisitos\t1\n60033\tAT002\tConfiguração Ambiente\t1\n60034\tAT005\tMigração Base de Dados\t1\n60035\tAT004\tAnálise Infraestrutura Atual\t1\n60036\tAT006\tTestes de Performance\t1\n60037\tAT009\tIntegração APIs\t1\n60038\tAT010\tPlanejamento Portal\t1\n60039\tAT008\tDesenvolvimento Frontend\t1\n60040\tAT007\tDesign UI/UX\t1\n",
+  "stderr": "",
+  "execution_time_ms": 46
+}
