@@ -1,6 +1,7 @@
 import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -9,8 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { trpc } from "@/lib/trpc";
-import { FolderKanban, Trash2, Save, X } from "lucide-react";
+import { FolderKanban, Trash2, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -58,10 +60,9 @@ export default function Projetos() {
       const updated = current.includes(pessoaId)
         ? current.filter((id) => id !== pessoaId)
         : [...current, pessoaId];
-      
-      // Atualizar também no editedProjetos
+
       handleChange(projetoId, "responsaveis", updated.join(","));
-      
+
       return {
         ...prev,
         [projetoId]: updated,
@@ -88,19 +89,6 @@ export default function Projetos() {
       if (updates.length === 0) {
         toast.info("Nenhuma alteração para salvar");
         return;
-      }
-
-      // Validar campos obrigatórios
-      for (const [idStr, data] of updates) {
-        const id = parseInt(idStr);
-        const projeto = projetos?.find((p) => p.id === id);
-        const codigo = data.codigo ?? projeto?.codigo;
-        const nome = data.nome ?? projeto?.nome;
-
-        if (!codigo || !nome) {
-          toast.error("Código e Nome são obrigatórios!");
-          return;
-        }
       }
 
       for (const [idStr, data] of updates) {
@@ -140,11 +128,6 @@ export default function Projetos() {
 
   const getValue = (projeto: any, field: string) => {
     return editedProjetos[projeto.id]?.[field] ?? projeto[field] ?? "";
-  };
-
-  const isFieldEmpty = (projeto: any, field: string) => {
-    const value = getValue(projeto, field);
-    return !value || value === "";
   };
 
   if (isLoading) {
@@ -198,40 +181,40 @@ export default function Projetos() {
               <table className="w-full">
                 <thead className="bg-[#005CA9] text-white">
                   <tr>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[140px]">
-                      Código *
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[100px]">
+                      Código
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[250px]">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[200px]">
                       Nome *
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[350px]">
-                      Descrição
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[300px]">
+                      Descrição *
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[150px]">
-                      Prioridade
+                      Prioridade *
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[300px]">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[250px]">
                       Responsáveis *
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[180px]">
                       Início Planejado
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[180px]">
-                      Fim Planejado
+                      Fim Planejado *
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[150px]">
-                      Status
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700 min-w-[120px]">
-                      Progresso %
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[250px]">
-                      Observações
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[120px]">
+                    <th className="px-4 py-4 text-center font-bold uppercase text-sm whitespace-nowrap min-w-[120px]">
                       Aprovação
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-[#F5B800] text-[#005CA9] min-w-[100px]">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700 min-w-[140px]">
+                      Início Real
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700 min-w-[140px]">
+                      Fim Previsto
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700 min-w-[120px]">
+                      Qtd Horas
+                    </th>
+                    <th className="px-4 py-4 text-center font-bold uppercase text-sm whitespace-nowrap bg-[#F5B800] text-[#005CA9] min-w-[100px]">
                       Ações
                     </th>
                   </tr>
@@ -257,12 +240,7 @@ export default function Projetos() {
                             onChange={(e) =>
                               handleChange(projeto.id, "codigo", e.target.value)
                             }
-                            className={`border-2 focus:border-[#005CA9] ${
-                              isFieldEmpty(projeto, "codigo")
-                                ? "required-empty"
-                                : "border-[#005CA9]/20"
-                            }`}
-                            required
+                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -271,21 +249,17 @@ export default function Projetos() {
                             onChange={(e) =>
                               handleChange(projeto.id, "nome", e.target.value)
                             }
-                            className={`border-2 focus:border-[#005CA9] ${
-                              isFieldEmpty(projeto, "nome")
-                                ? "required-empty"
-                                : "border-[#005CA9]/20"
-                            }`}
-                            required
+                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <Input
+                          <Textarea
                             value={getValue(projeto, "descricao")}
                             onChange={(e) =>
                               handleChange(projeto.id, "descricao", e.target.value)
                             }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9] min-h-[44px]"
+                            rows={2}
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -299,23 +273,29 @@ export default function Projetos() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Baixa">Baixa</SelectItem>
-                              <SelectItem value="Média">Média</SelectItem>
-                              <SelectItem value="Alta">Alta</SelectItem>
-                              <SelectItem value="Crítica">Crítica</SelectItem>
+                              <SelectItem value="Selecionar...">Selecionar...</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="space-y-2">
-                            <div className="text-sm font-medium text-gray-700 bg-gray-100 p-2 rounded border border-gray-300 min-h-[44px] flex items-center">
-                              {responsaveisNomes || "Nenhum responsável selecionado"}
-                            </div>
-                            <details className="relative">
-                              <summary className="cursor-pointer text-sm text-[#005CA9] hover:underline">
-                                Selecionar Responsáveis
-                              </summary>
-                              <div className="absolute z-10 mt-1 bg-white border-2 border-[#005CA9] rounded-lg shadow-lg p-3 max-h-60 overflow-y-auto min-w-[280px]">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left border-2 border-[#005CA9]/20 hover:border-[#005CA9] min-h-[44px]"
+                              >
+                                <span className="truncate">
+                                  {responsaveisIds.length > 0
+                                    ? `${responsaveisIds.length} responsáveis selecionados`
+                                    : "Selecionar..."}
+                                </span>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 max-h-96 overflow-y-auto">
+                              <div className="space-y-2">
+                                <h4 className="font-semibold text-sm text-[#005CA9] mb-3">
+                                  Selecione os Responsáveis
+                                </h4>
                                 {pessoasAtivas.length === 0 ? (
                                   <p className="text-sm text-gray-500">
                                     Nenhuma pessoa cadastrada
@@ -333,15 +313,24 @@ export default function Projetos() {
                                         }
                                       />
                                       <span className="text-sm">
-                                        {pessoa.nome || `Pessoa ${pessoa.id}`} -{" "}
-                                        {pessoa.cargo || "Sem cargo"}
+                                        {pessoa.nome || `Pessoa ${pessoa.id}`}
                                       </span>
                                     </label>
                                   ))
                                 )}
                               </div>
-                            </details>
-                          </div>
+                              {responsaveisIds.length > 0 && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <p className="text-xs text-gray-600 font-medium">
+                                    Selecionados:
+                                  </p>
+                                  <p className="text-xs text-gray-800 mt-1">
+                                    {responsaveisNomes}
+                                  </p>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
                         </td>
                         <td className="px-4 py-3">
                           <Input
@@ -375,35 +364,11 @@ export default function Projetos() {
                             className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
                           />
                         </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            value={getValue(projeto, "status")}
-                            onChange={(e) =>
-                              handleChange(projeto.id, "status", e.target.value)
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                          />
-                        </td>
-                        <td className="px-4 py-3 bg-gray-100">
-                          <div className="text-sm text-gray-600 font-medium text-center">
-                            {projeto.progresso || 0}%
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            value={getValue(projeto, "observacoes")}
-                            onChange={(e) =>
-                              handleChange(projeto.id, "observacoes", e.target.value)
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                          />
-                        </td>
                         <td className="px-4 py-3 text-center">
                           <input
                             type="checkbox"
                             checked={
-                              editedProjetos[projeto.id]?.aprovacao ??
-                              projeto.aprovacao
+                              editedProjetos[projeto.id]?.aprovacao ?? projeto.aprovacao
                             }
                             onChange={(e) =>
                               handleChange(projeto.id, "aprovacao", e.target.checked)
@@ -411,7 +376,16 @@ export default function Projetos() {
                             className="h-6 w-6 accent-[#005CA9]"
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 bg-gray-100">
+                          <div className="text-sm text-gray-600 text-center">-</div>
+                        </td>
+                        <td className="px-4 py-3 bg-gray-100">
+                          <div className="text-sm text-gray-600 text-center">-</div>
+                        </td>
+                        <td className="px-4 py-3 bg-gray-100">
+                          <div className="text-sm text-gray-600 text-center">0</div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
                           <Button
                             variant="ghost"
                             size="sm"

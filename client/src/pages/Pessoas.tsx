@@ -2,8 +2,8 @@ import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { Users, Trash2, UserX, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Users, Trash2, Save } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Pessoas() {
@@ -19,11 +19,11 @@ export default function Pessoas() {
       await createPessoa.mutateAsync({
         codigo: `P${Date.now()}`,
         nome: "",
-        setor: "",
         email: "",
         telefone: "",
         cargo: "",
         departamento: "",
+        setor: "",
         ativo: true,
       });
       await refetch();
@@ -64,14 +64,15 @@ export default function Pessoas() {
     }
   };
 
-  const handleInactivate = async (id: number, nome: string) => {
-    if (!confirm(`Tem certeza que deseja inativar ${nome}?`)) return;
+  const handleToggleAtivo = async (id: number, currentStatus: boolean) => {
     try {
-      await updatePessoa.mutateAsync({ id, ativo: false });
+      await updatePessoa.mutateAsync({ id, ativo: !currentStatus });
       await refetch();
-      toast.success("Pessoa inativada!");
+      toast.success(
+        !currentStatus ? "Pessoa ativada!" : "Pessoa inativada!"
+      );
     } catch (error) {
-      toast.error("Erro ao inativar pessoa");
+      toast.error("Erro ao alterar status");
     }
   };
 
@@ -86,8 +87,6 @@ export default function Pessoas() {
       </MainLayout>
     );
   }
-
-  const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
 
   return (
     <MainLayout>
@@ -114,7 +113,7 @@ export default function Pessoas() {
           </div>
         </div>
 
-        {pessoasAtivas.length === 0 ? (
+        {!pessoas || pessoas.length === 0 ? (
           <div className="border-4 border-[#005CA9] rounded-2xl p-16 text-center">
             <div className="flex flex-col items-center gap-4">
               <Users className="h-20 w-20 text-[#005CA9]/30" />
@@ -128,137 +127,174 @@ export default function Pessoas() {
           </div>
         ) : (
           <div className="border-4 border-[#005CA9] rounded-2xl overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-[#005CA9] text-white">
-                <tr>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Código</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Nome</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Email</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Telefone</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Cargo</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Departamento</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Setor</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Status</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Ativo</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm">Observações</th>
-                  <th className="px-4 py-4 text-left font-bold uppercase text-sm bg-[#F5B800] text-[#005CA9]">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {pessoasAtivas.map((pessoa, index) => (
-                  <tr
-                    key={pessoa.id}
-                    className={`border-b-2 border-[#005CA9]/10 hover:bg-blue-50 transition-colors ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }`}
-                  >
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "codigo")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "codigo", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "nome")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "nome", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "email")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "email", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "telefone")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "telefone", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "cargo")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "cargo", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "departamento")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "departamento", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "setor")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "setor", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "status")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "status", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={getValue(pessoa, "ativo")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "ativo", e.target.checked)
-                        }
-                        className="h-5 w-5 accent-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        value={getValue(pessoa, "observacoes")}
-                        onChange={(e) =>
-                          handleChange(pessoa.id, "observacoes", e.target.value)
-                        }
-                        className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleInactivate(pessoa.id, pessoa.nome || "")}
-                        className="hover:bg-red-50"
-                      >
-                        <UserX className="h-5 w-5 text-red-600" />
-                      </Button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#005CA9] text-white">
+                  <tr>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[120px]">
+                      Código
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[250px]">
+                      Nome
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[250px]">
+                      Email
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[180px]">
+                      Telefone
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[200px]">
+                      Cargo
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[200px]">
+                      Departamento
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[180px]">
+                      Setor
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[120px]">
+                      Status
+                    </th>
+                    <th className="px-4 py-4 text-center font-bold uppercase text-sm whitespace-nowrap min-w-[100px]">
+                      Ativo
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[300px]">
+                      Observações
+                    </th>
+                    <th className="px-4 py-4 text-center font-bold uppercase text-sm whitespace-nowrap bg-[#F5B800] text-[#005CA9] min-w-[100px]">
+                      Ações
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white">
+                  {pessoas.map((pessoa, index) => (
+                    <tr
+                      key={pessoa.id}
+                      className={`border-b-2 border-[#005CA9]/10 hover:bg-blue-50 transition-colors ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } ${!pessoa.ativo ? "opacity-50" : ""}`}
+                    >
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "codigo")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "codigo", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "nome")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "nome", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          type="email"
+                          value={getValue(pessoa, "email")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "email", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "telefone")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "telefone", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "cargo")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "cargo", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "departamento")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "departamento", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "setor")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "setor", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-center">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                              pessoa.ativo
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {pessoa.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={pessoa.ativo}
+                          onChange={() =>
+                            handleToggleAtivo(pessoa.id, pessoa.ativo)
+                          }
+                          className="h-6 w-6 accent-[#005CA9] cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={getValue(pessoa, "observacoes")}
+                          onChange={(e) =>
+                            handleChange(pessoa.id, "observacoes", e.target.value)
+                          }
+                          className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                          disabled={!pessoa.ativo}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            handleToggleAtivo(pessoa.id, pessoa.ativo)
+                          }
+                          className="hover:bg-red-50"
+                        >
+                          <Trash2 className="h-5 w-5 text-red-600" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

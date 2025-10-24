@@ -1,17 +1,6 @@
 import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { trpc } from "@/lib/trpc";
-import { CheckSquare, Trash2, Plus, Save } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,95 +8,96 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
+import { CheckSquare, Trash2, Save, Undo2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function Subtarefas() {
   const { data: subtarefas, isLoading, refetch } = trpc.subtarefas.list.useQuery();
   const { data: atividades } = trpc.atividades.list.useQuery();
-  const { data: projetos } = trpc.projetos.list.useQuery();
+  const { data: pessoas } = trpc.pessoas.list.useQuery();
   const createSubtarefa = trpc.subtarefas.create.useMutation();
   const updateSubtarefa = trpc.subtarefas.update.useMutation();
   const deleteSubtarefa = trpc.subtarefas.delete.useMutation();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedAtividadeId, setSelectedAtividadeId] = useState<number | null>(null);
-  const [quantidade, setQuantidade] = useState(1);
+  const [editedSubtarefas, setEditedSubtarefas] = useState<Record<number, any>>({});
+  const [markedForDeletion, setMarkedForDeletion] = useState<Set<number>>(new Set());
 
-  const handleAddBatch = async () => {
-    if (!selectedAtividadeId) {
-      toast.error("Selecione uma atividade");
+  const handleAdd = async () => {
+    if (!atividades || atividades.length === 0) {
+      toast.error(
+        "❌ Não é possível criar subtarefas!\n\nPrimeiro você precisa criar pelo menos uma atividade.",
+        { duration: 5000 }
+      );
       return;
     }
+
     try {
-      for (let i = 0; i < quantidade; i++) {
-        await createSubtarefa.mutateAsync({
-          codigo: `ST${Date.now()}-${i}`,
-          atividadeId: selectedAtividadeId,
-          nome: "",
-          progresso: 0,
-        });
+      await createSubtarefa.mutateAsync({
+        codigo: `SUB${Date.now()}`,
+        nome: "",
+        atividadeId: atividades[0].id,
+      });
+      await refetch();
+      toast.success("Subtarefa adicionada!");
+    } catch (error) {
+      toast.error("Erro ao adicionar subtarefa");
+    }
+  };
+
+  const handleChange = (id: number, field: string, value: any) => {
+    setEditedSubtarefas((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveAll = async () => {
+    try {
+      const updates = Object.entries(editedSubtarefas);
+      if (updates.length === 0 && markedForDeletion.size === 0) {
+        toast.info("Nenhuma alteração para salvar");
+        return;
       }
+
+      for (const [idStr, data] of updates) {
+        const id = parseInt(idStr);
+        if (!markedForDeletion.has(id)) {
+          await updateSubtarefa.mutateAsync({ id, ...data });
+        }
+      }
+
+      for (const id of Array.from(markedForDeletion)) {
+        await deleteSubtarefa.mutateAsync({ id });
+      }
+
+      setEditedSubtarefas({});
+      setMarkedForDeletion(new Set());
       await refetch();
-      setIsDialogOpen(false);
-      toast.success(`${quantidade} subtarefa(s) adicionada(s)!`);
+      toast.success("✓ Alterações Salvas!", { duration: 2000 });
     } catch (error) {
-      toast.error("Erro ao adicionar subtarefas");
+      toast.error("Erro ao salvar alterações");
     }
   };
 
-  const handleUpdate = async (id: number, data: any) => {
-    try {
-      await updateSubtarefa.mutateAsync({ id, ...data });
-      await refetch();
-    } catch (error) {
-      toast.error("Erro ao atualizar subtarefa");
-    }
+  const toggleMarkForDeletion = (id: number) => {
+    setMarkedForDeletion((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Deseja realmente excluir esta subtarefa?")) return;
-    try {
-      await deleteSubtarefa.mutateAsync({ id });
-      await refetch();
-      toast.success("Subtarefa excluída!");
-    } catch (error) {
-      toast.error("Erro ao excluir subtarefa");
-    }
-  };
-
-  const handleSave = () => {
-    toast.success("✓ Alterações Salvas!", { duration: 2000 });
-  };
-
-  const getAtividadeNome = (atividadeId: number) => {
-    return atividades?.find((a) => a.id === atividadeId)?.tarefa || "-";
-  };
-
-  const getProjetoAprovado = (atividadeId: number) => {
-    const atividade = atividades?.find((a) => a.id === atividadeId);
-    if (!atividade) return false;
-    return projetos?.find((p) => p.id === atividade.projetoId)?.aprovacao || false;
-  };
-
-  const calcularPrevisaoEntrega = (dataInicio: any, diasPrevistos: number | null) => {
-    if (!dataInicio || !diasPrevistos) return "";
-    const data = new Date(dataInicio);
-    data.setDate(data.getDate() + diasPrevistos);
-    return data.toISOString().split("T")[0];
-  };
-
-  const calcularStatusPrazo = (previsaoEntrega: string) => {
-    if (!previsaoEntrega) return "";
-    const hoje = new Date();
-    const previsao = new Date(previsaoEntrega);
-    return previsao >= hoje ? "Dentro do Prazo" : "Fora do Prazo";
-  };
-
-  const calcularStatus = (progresso: number) => {
-    if (progresso === -1) return "Cancelado";
-    if (progresso === 0) return "Não Iniciado";
-    if (progresso > 0 && progresso < 100) return "Em Andamento";
-    if (progresso === 100) return "Concluído";
-    return "Não Iniciado";
+  const getValue = (subtarefa: any, field: string) => {
+    return editedSubtarefas[subtarefa.id]?.[field] ?? subtarefa[field] ?? "";
   };
 
   if (isLoading) {
@@ -118,6 +108,8 @@ export default function Subtarefas() {
     );
   }
 
+  const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -127,61 +119,15 @@ export default function Subtarefas() {
             SubAtividades
           </h2>
           <div className="flex gap-3">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#005CA9] hover:bg-[#005CA9]/90 text-white font-semibold px-6 py-6 text-lg rounded-xl">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Adicionar Subtarefa
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="border-4 border-[#005CA9]">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl text-[#005CA9]">
-                    Adicionar Subtarefas
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-semibold text-[#005CA9]">Atividade</label>
-                    <Select
-                      value={selectedAtividadeId?.toString()}
-                      onValueChange={(value) => setSelectedAtividadeId(Number(value))}
-                    >
-                      <SelectTrigger className="border-2 border-[#005CA9]">
-                        <SelectValue placeholder="Selecione uma atividade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {atividades?.map((atividade) => (
-                          <SelectItem key={atividade.id} value={atividade.id.toString()}>
-                            {atividade.codigo} - {atividade.tarefa}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-[#005CA9]">
-                      Quantidade de linhas
-                    </label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={quantidade}
-                      onChange={(e) => setQuantidade(Number(e.target.value))}
-                      className="border-2 border-[#005CA9]"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleAddBatch}
-                    className="w-full bg-[#F5B800] hover:bg-[#F5B800]/90 text-[#005CA9] font-semibold py-6"
-                  >
-                    Criar Subtarefas
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
             <Button
-              onClick={handleSave}
+              onClick={handleAdd}
+              className="bg-[#F5B800] hover:bg-[#F5B800]/90 text-[#005CA9] font-semibold px-6 py-6 text-lg rounded-xl"
+              disabled={!atividades || atividades.length === 0}
+            >
+              + Adicionar Subtarefa
+            </Button>
+            <Button
+              onClick={handleSaveAll}
               className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-6 text-lg rounded-xl"
             >
               <Save className="h-5 w-5 mr-2" />
@@ -190,16 +136,24 @@ export default function Subtarefas() {
           </div>
         </div>
 
-        {!subtarefas || subtarefas.length === 0 ? (
+        {!atividades || atividades.length === 0 ? (
           <div className="border-4 border-[#005CA9] rounded-2xl p-16 text-center">
             <div className="flex flex-col items-center gap-4">
               <CheckSquare className="h-20 w-20 text-[#005CA9]/30" />
               <p className="text-xl text-gray-500 font-medium">
-                Nenhuma subatividade cadastrada
+                Nenhuma atividade cadastrada
               </p>
-              <p className="text-gray-400">
-                Clique em "Adicionar Subtarefa" para começar
+              <p className="text-gray-400">Primeiro crie uma atividade</p>
+            </div>
+          </div>
+        ) : !subtarefas || subtarefas.length === 0 ? (
+          <div className="border-4 border-[#005CA9] rounded-2xl p-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <CheckSquare className="h-20 w-20 text-[#005CA9]/30" />
+              <p className="text-xl text-gray-500 font-medium">
+                Nenhuma subtarefa cadastrada
               </p>
+              <p className="text-gray-400">Clique em "Adicionar Subtarefa"</p>
             </div>
           </div>
         ) : (
@@ -208,226 +162,134 @@ export default function Subtarefas() {
               <table className="w-full">
                 <thead className="bg-[#005CA9] text-white">
                   <tr>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Código *
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[120px]">
+                      Código
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[250px]">
+                      Nome
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[200px]">
                       Atividade
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[200px]">
-                      Nome *
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[200px]">
                       Responsável
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Data Início
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Data Fim
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[150px]">
                       Status
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Progresso %
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Qtd Horas
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Horas Utilizadas
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap">
-                      Diferença
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700">
-                      Dias Previstos
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700">
-                      Previsão Entrega
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-gray-700">
-                      Status Prazo
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap min-w-[200px]">
-                      Observações
-                    </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm whitespace-nowrap bg-[#F5B800] text-[#005CA9]">
+                    <th className="px-4 py-4 text-center font-bold uppercase text-sm min-w-[100px] bg-[#F5B800] text-[#005CA9]">
                       Ações
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
                   {subtarefas.map((subtarefa, index) => {
-                    const projetoAprovado = getProjetoAprovado(subtarefa.atividadeId);
-                    const progressoEditavel = projetoAprovado;
-                    const previsaoEntrega = calcularPrevisaoEntrega(
-                      subtarefa.dataInicio,
-                      subtarefa.diasPrevistos
-                    );
-                    const statusPrazo = calcularStatusPrazo(previsaoEntrega);
-                    const status = calcularStatus(subtarefa.progresso || 0);
-                    const diferenca =
-                      (subtarefa.quantidadeHoras || 0) - (subtarefa.horasUtilizadas || 0);
-                    const diferencaColor =
-                      diferenca > 0 ? "#059669" : diferenca < 0 ? "#DC2626" : "#000";
+                    const isMarked = markedForDeletion.has(subtarefa.id);
 
                     return (
                       <tr
                         key={subtarefa.id}
-                        className={`border-b-2 border-[#005CA9]/10 hover:bg-blue-50 transition-colors ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        className={`border-b-2 border-[#005CA9]/10 transition-colors ${
+                          isMarked
+                            ? "marked-for-deletion"
+                            : index % 2 === 0
+                            ? "bg-white hover:bg-blue-50"
+                            : "bg-gray-50 hover:bg-blue-50"
                         }`}
                       >
                         <td className="px-4 py-3">
                           <Input
-                            value={subtarefa.codigo}
+                            value={getValue(subtarefa, "codigo")}
                             onChange={(e) =>
-                              handleUpdate(subtarefa.id, { codigo: e.target.value })
+                              handleChange(subtarefa.id, "codigo", e.target.value)
                             }
                             className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                            required
+                            disabled={isMarked}
                           />
-                        </td>
-                        <td className="px-4 py-3 bg-gray-100">
-                          <div className="text-sm text-gray-600 font-medium">
-                            {getAtividadeNome(subtarefa.atividadeId)}
-                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <Input
-                            value={subtarefa.nome || ""}
+                            value={getValue(subtarefa, "nome")}
                             onChange={(e) =>
-                              handleUpdate(subtarefa.id, { nome: e.target.value })
+                              handleChange(subtarefa.id, "nome", e.target.value)
                             }
                             className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                            required
+                            disabled={isMarked}
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <Input
-                            value={subtarefa.responsavel || ""}
-                            onChange={(e) =>
-                              handleUpdate(subtarefa.id, { responsavel: e.target.value })
+                          <Select
+                            value={String(getValue(subtarefa, "atividadeId") || "")}
+                            onValueChange={(value) =>
+                              handleChange(
+                                subtarefa.id,
+                                "atividadeId",
+                                parseInt(value)
+                              )
                             }
-                            placeholder="IDs separados por vírgula"
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="date"
-                            value={
-                              subtarefa.dataInicio
-                                ? new Date(subtarefa.dataInicio).toISOString().split("T")[0]
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handleUpdate(subtarefa.id, { dataInicio: e.target.value })
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="date"
-                            value={
-                              subtarefa.dataFim
-                                ? new Date(subtarefa.dataFim).toISOString().split("T")[0]
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handleUpdate(subtarefa.id, { dataFim: e.target.value })
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                          />
-                        </td>
-                        <td className="px-4 py-3 bg-gray-100">
-                          <div className="text-sm text-gray-600 font-medium">{status}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="text"
-                            value={subtarefa.progresso || 0}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              if (val >= -1 && val <= 100) {
-                                handleUpdate(subtarefa.id, { progresso: val });
-                              }
-                            }}
-                            disabled={!progressoEditavel}
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9] w-16"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            value={subtarefa.quantidadeHoras || 0}
-                            onChange={(e) =>
-                              handleUpdate(subtarefa.id, {
-                                quantidadeHoras: Number(e.target.value),
-                              })
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9] w-20"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            value={subtarefa.horasUtilizadas || 0}
-                            onChange={(e) =>
-                              handleUpdate(subtarefa.id, {
-                                horasUtilizadas: Number(e.target.value),
-                              })
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9] w-20"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <div
-                            className="text-sm font-bold text-center"
-                            style={{ color: diferencaColor }}
+                            disabled={isMarked}
                           >
-                            {diferenca}
-                          </div>
+                            <SelectTrigger className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {atividades?.map((ativ) => (
+                                <SelectItem key={ativ.id} value={String(ativ.id)}>
+                                  {ativ.tarefa}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
-                        <td className="px-4 py-3 bg-gray-100">
-                          <Input
-                            type="text"
-                            value={subtarefa.diasPrevistos || ""}
-                            onChange={(e) =>
-                              handleUpdate(subtarefa.id, {
-                                diasPrevistos: Number(e.target.value) || null,
-                              })
+                        <td className="px-4 py-3">
+                          <Select
+                            value={String(getValue(subtarefa, "responsavelId") || "")}
+                            onValueChange={(value) =>
+                              handleChange(
+                                subtarefa.id,
+                                "responsavelId",
+                                value ? parseInt(value) : null
+                              )
                             }
-                            placeholder="Ex: 5"
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9] w-16"
-                          />
-                        </td>
-                        <td className="px-4 py-3 bg-gray-100">
-                          <div className="text-sm text-gray-600">{previsaoEntrega}</div>
-                        </td>
-                        <td className="px-4 py-3 bg-gray-100">
-                          <div className="text-sm text-gray-600">{statusPrazo}</div>
+                            disabled={isMarked}
+                          >
+                            <SelectTrigger className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]">
+                              <SelectValue placeholder="Selecionar..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Nenhum</SelectItem>
+                              {pessoasAtivas.map((pessoa) => (
+                                <SelectItem key={pessoa.id} value={String(pessoa.id)}>
+                                  {pessoa.nome || `Pessoa ${pessoa.id}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="px-4 py-3">
                           <Input
-                            value={subtarefa.observacoes || ""}
+                            value={getValue(subtarefa, "status")}
                             onChange={(e) =>
-                              handleUpdate(subtarefa.id, { observacoes: e.target.value })
+                              handleChange(subtarefa.id, "status", e.target.value)
                             }
                             className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                            disabled={isMarked}
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(subtarefa.id)}
-                            className="hover:bg-red-50"
+                            onClick={() => toggleMarkForDeletion(subtarefa.id)}
+                            className={
+                              isMarked ? "hover:bg-green-50" : "hover:bg-red-50"
+                            }
                           >
-                            <Trash2 className="h-5 w-5 text-red-600" />
+                            {isMarked ? (
+                              <Undo2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Trash2 className="h-5 w-5 text-red-600" />
+                            )}
                           </Button>
                         </td>
                       </tr>
@@ -436,6 +298,17 @@ export default function Subtarefas() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {markedForDeletion.size > 0 && (
+          <div className="bg-red-100 border-2 border-red-400 rounded-xl p-4 text-center">
+            <p className="text-red-800 font-semibold">
+              ⚠️ {markedForDeletion.size} subtarefa(s) marcada(s) para remoção
+            </p>
+            <p className="text-red-600 text-sm mt-1">
+              Clique em "Salvar" para confirmar ou no ícone de desfazer
+            </p>
           </div>
         )}
       </div>

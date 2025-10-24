@@ -114,10 +114,17 @@ export default function Atividades() {
     <MainLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-[#005CA9] flex items-center gap-3">
-            <Zap className="h-8 w-8" />
-            Atividades
-          </h2>
+          <div>
+            <h2 className="text-3xl font-bold text-[#005CA9] flex items-center gap-3">
+              <Zap className="h-8 w-8" />
+              Atividades
+            </h2>
+            {atividades && atividades.length > 0 && (
+              <p className="text-sm text-gray-600 mt-2">
+                Total: {atividades.length} | Concluídas: 0
+              </p>
+            )}
+          </div>
           <div className="flex gap-3">
             <Button
               onClick={handleAdd}
@@ -164,17 +171,26 @@ export default function Atividades() {
               <table className="w-full">
                 <thead className="bg-[#005CA9] text-white">
                   <tr>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[140px]">
-                      Código
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[120px]">
+                      Código Projeto
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[180px]">
+                      Projeto
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[200px]">
-                      Projeto *
+                      Resp. Projeto
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[180px]">
+                      Início Plan.
+                    </th>
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[180px]">
+                      Fim Plan.
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[250px]">
-                      Tarefa
+                      Tarefa *
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[200px]">
-                      Responsável
+                      Resp. Tarefa *
                     </th>
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[150px]">
                       Dias Prev.
@@ -182,10 +198,13 @@ export default function Atividades() {
                     <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[180px]">
                       Data Início
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[120px] bg-gray-700">
-                      Progresso %
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[180px]">
+                      Prev. Entrega
                     </th>
-                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[100px] bg-[#F5B800] text-[#005CA9]">
+                    <th className="px-4 py-4 text-left font-bold uppercase text-sm min-w-[150px]">
+                      Status
+                    </th>
+                    <th className="px-4 py-4 text-center font-bold uppercase text-sm min-w-[100px] bg-[#F5B800] text-[#005CA9]">
                       Ações
                     </th>
                   </tr>
@@ -193,6 +212,7 @@ export default function Atividades() {
                 <tbody className="bg-white">
                   {atividades.map((atividade, index) => {
                     const isMarked = markedForDeletion.has(atividade.id);
+                    const projeto = projetos?.find((p) => p.id === atividade.projetoId);
 
                     return (
                       <tr
@@ -206,14 +226,9 @@ export default function Atividades() {
                         }`}
                       >
                         <td className="px-4 py-3">
-                          <Input
-                            value={getValue(atividade, "codigo")}
-                            onChange={(e) =>
-                              handleChange(atividade.id, "codigo", e.target.value)
-                            }
-                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
-                            disabled={isMarked}
-                          />
+                          <div className="text-sm font-medium text-gray-700">
+                            {projeto?.codigo || "-"}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <Select
@@ -229,11 +244,32 @@ export default function Atividades() {
                             <SelectContent>
                               {projetos?.map((proj) => (
                                 <SelectItem key={proj.id} value={String(proj.id)}>
-                                  {proj.codigo} - {proj.nome}
+                                  {proj.nome}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-600">
+                            {projeto?.responsaveis || "-"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-600">
+                            {projeto?.inicioPlanejado
+                              ? new Date(projeto.inicioPlanejado).toLocaleDateString(
+                                  "pt-BR"
+                                )
+                              : "-"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-600">
+                            {projeto?.fimPlanejado
+                              ? new Date(projeto.fimPlanejado).toLocaleDateString("pt-BR")
+                              : "-"}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <Input
@@ -258,7 +294,7 @@ export default function Atividades() {
                             disabled={isMarked}
                           >
                             <SelectTrigger className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]">
-                              <SelectValue placeholder="Selecione" />
+                              <SelectValue placeholder="Selecionar..." />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="">Nenhum</SelectItem>
@@ -303,11 +339,19 @@ export default function Atividades() {
                           />
                         </td>
                         <td className="px-4 py-3 bg-gray-100">
-                          <div className="text-sm text-gray-600 font-medium text-center">
-                            {atividade.progresso || 0}%
-                          </div>
+                          <div className="text-sm text-gray-600">-</div>
                         </td>
                         <td className="px-4 py-3">
+                          <Input
+                            value={getValue(atividade, "status")}
+                            onChange={(e) =>
+                              handleChange(atividade.id, "status", e.target.value)
+                            }
+                            className="border-2 border-[#005CA9]/20 focus:border-[#005CA9]"
+                            disabled={isMarked}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
                           <Button
                             variant="ghost"
                             size="sm"
