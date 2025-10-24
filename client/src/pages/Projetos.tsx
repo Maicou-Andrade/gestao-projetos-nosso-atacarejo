@@ -42,7 +42,7 @@ export default function Projetos() {
         nome: "",
         descricao: "",
         prioridade: "Média",
-        responsaveis: [],
+        responsaveis: "",
         inicioPlanejado: "",
         fimPlanejado: "",
         aprovacao: false,
@@ -124,7 +124,7 @@ export default function Projetos() {
     if (!row.descricao) errors.push("descricao");
     if (!row.inicioPlanejado) errors.push("inicioPlanejado");
     if (!row.fimPlanejado) errors.push("fimPlanejado");
-    if (row.responsaveis.length === 0) errors.push("responsaveis");
+    if (!row.responsaveis) errors.push("responsaveis");
 
     if (errors.length > 0) {
       setValidationErrors((prev) => ({ ...prev, [tempId]: errors }));
@@ -141,7 +141,7 @@ export default function Projetos() {
     try {
       await createProjeto.mutateAsync({
         ...row,
-        responsaveis: row.responsaveis.join(","),
+        responsaveis: row.responsaveis,
       });
       setNewRows((rows) => rows.filter((r) => r.tempId !== tempId));
       await refetch();
