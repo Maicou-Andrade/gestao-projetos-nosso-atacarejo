@@ -26,7 +26,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <div className="border-2 border-white/30 rounded-3xl m-4 p-6 bg-[#005CA9]/80 backdrop-blur-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <img src={APP_LOGO} alt="Logo" className="w-20 h-20 rounded-xl bg-white p-2 shadow-lg" />
+            <img src={APP_LOGO} alt="Logo" className="w-20 h-20 rounded-xl bg-white p-2 shadow-lg" style={{ filter: 'brightness(1) contrast(1.2)' }} />
             <div>
               <h1 className="text-3xl font-bold text-white">
                 Sistema de Gerenciamento de Projetos
