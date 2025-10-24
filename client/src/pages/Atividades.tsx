@@ -359,6 +359,24 @@ export default function Atividades() {
     }
   };
 
+  // Função para navegação com Enter (próxima linha, mesma coluna)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>, currentRow: number, fieldName: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Encontrar todos os inputs/selects da mesma coluna
+      const allInputs = document.querySelectorAll(`[data-field="${fieldName}"]`);
+      const inputsArray = Array.from(allInputs) as HTMLElement[];
+      const currentIndex = inputsArray.findIndex(input => input === e.target);
+      
+      // Focar no próximo input da mesma coluna (próxima linha)
+      if (currentIndex >= 0 && currentIndex < inputsArray.length - 1) {
+        inputsArray[currentIndex + 1].focus();
+      }
+    }
+    // Tab funciona nativamente para próximo campo
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -381,9 +399,15 @@ export default function Atividades() {
             .join(", ")
         : "-";
       
+      // Extrair responsavelId do campo responsaveisTarefa
+      const responsavelId = atividade.responsaveisTarefa 
+        ? parseInt(atividade.responsaveisTarefa.split(',')[0].trim()) 
+        : null;
+
       return {
         ...atividade,
         isNew: false,
+        responsavelId, // Adicionar responsavelId para uso na exibição
         codigoProjeto: projeto?.codigo || "-",
         nomeProjeto: projeto?.nome || "-",
         respProjeto: responsavelNomes,
@@ -445,24 +469,24 @@ export default function Atividades() {
           <table className="w-full">
             <thead>
               <tr className="bg-[#005CA9] text-white">
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Código Projeto</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Projeto</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Resp. Projeto</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Início Plan.</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Fim Plan.</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase bg-[#F5B800] text-black">Tarefa *</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase bg-[#F5B800] text-black">Resp. Tarefa *</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Dias Prev.</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Data Início</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Prev. Entrega</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Status</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Status Prazo</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Progresso %</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">QTD Horas</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Horas Usadas</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Dif. Horas</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Observações</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold uppercase bg-[#F5B800] text-black">Ações</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Código Projeto</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Projeto</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Resp. Projeto</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Início Plan.</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Fim Plan.</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase bg-[#F5B800] text-black">Tarefa *</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase bg-[#F5B800] text-black">Resp. Tarefa *</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Dias Prev.</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Data Início</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Prev. Entrega</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Status</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Status Prazo</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Progresso %</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">QTD Horas</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Horas Usadas</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Dif. Horas</th>
+                <th translate="no" className="px-3 py-3 text-left text-xs font-semibold uppercase">Observações</th>
+                <th translate="no" className="px-3 py-3 text-center text-xs font-semibold uppercase bg-[#F5B800] text-black">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -534,12 +558,14 @@ export default function Atividades() {
                       {/* Tarefa * */}
                       <td className="px-3 py-2 bg-yellow-50">
                         <Input
+                          data-field="tarefa"
                           value={data.tarefa || ""}
                           onChange={(e) =>
                             isNew
                               ? updateNewRow(id, "tarefa", e.target.value)
                               : updateEditingRow(id, "tarefa", e.target.value)
                           }
+                          onKeyDown={(e) => handleKeyDown(e, id, "tarefa")}
                           className={`h-9 text-xs min-w-[200px] ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("tarefa") ? "border-2 border-red-500" : ""}`}
                           placeholder="Nome da tarefa"
                           readOnly={!isEditing}
@@ -550,6 +576,7 @@ export default function Atividades() {
                       <td className="px-3 py-2 bg-yellow-50">
                         {isEditing ? (
                           <select
+                            data-field="responsavelId"
                             value={data.responsavelId || ""}
                             onChange={(e) => {
                               const value = e.target.value ? parseInt(e.target.value) : null;
@@ -557,6 +584,7 @@ export default function Atividades() {
                                 ? updateNewRow(id, "responsavelId", value)
                                 : updateEditingRow(id, "responsavelId", value);
                             }}
+                            onKeyDown={(e) => handleKeyDown(e, id, "responsavelId")}
                             className={`h-9 text-xs border rounded px-2 w-full min-w-[150px] ${errors.includes("responsavelId") ? "border-2 border-red-500" : ""}`}
                           >
                             <option value="">Selecionar...</option>
@@ -574,6 +602,7 @@ export default function Atividades() {
                       {/* Dias Prev. */}
                       <td className="px-3 py-2">
                         <Input
+                          data-field="diasPrevistos"
                           type="number"
                           value={data.diasPrevistos || ""}
                           onChange={(e) =>
@@ -581,6 +610,7 @@ export default function Atividades() {
                               ? updateNewRow(id, "diasPrevistos", e.target.value)
                               : updateEditingRow(id, "diasPrevistos", e.target.value)
                           }
+                          onKeyDown={(e) => handleKeyDown(e, id, "diasPrevistos")}
                           className={`h-9 text-xs w-20 ${!isEditing ? "border-0 bg-transparent" : ""}`}
                           placeholder="0"
                           readOnly={!isEditing}
@@ -591,6 +621,7 @@ export default function Atividades() {
                       <td className="px-3 py-2">
                         {isEditing ? (
                           <Input
+                            data-field="dataInicio"
                             type="date"
                             value={data.dataInicio || ""}
                             onChange={(e) =>
@@ -598,6 +629,7 @@ export default function Atividades() {
                                 ? updateNewRow(id, "dataInicio", e.target.value)
                                 : updateEditingRow(id, "dataInicio", e.target.value)
                             }
+                            onKeyDown={(e) => handleKeyDown(e, id, "dataInicio")}
                             className="h-9 text-xs"
                           />
                         ) : (
@@ -684,13 +716,17 @@ export default function Atividades() {
                       {/* Progresso % */}
                       <td className="px-3 py-2">
                         <Input
+                          data-field="progresso"
                           type="number"
-                          value={data.progresso || 0}
+                          min="-1"
+                          max="100"
+                          value={data.progresso ?? 0}
                           onChange={(e) =>
                             isNew
                               ? updateNewRow(id, "progresso", e.target.value)
                               : updateEditingRow(id, "progresso", e.target.value)
                           }
+                          onKeyDown={(e) => handleKeyDown(e, id, "progresso")}
                           className={`h-9 text-xs w-16 ${!isEditing || !projetoAprovado ? "border-0 bg-transparent" : ""}`}
                           readOnly={!isEditing || !projetoAprovado}
                           disabled={!projetoAprovado}
@@ -706,6 +742,7 @@ export default function Atividades() {
                       {/* Horas Usadas */}
                       <td className="px-3 py-2">
                         <Input
+                          data-field="horasUsadas"
                           type="number"
                           value={data.horasUsadas || 0}
                           onChange={(e) =>
@@ -713,6 +750,7 @@ export default function Atividades() {
                               ? updateNewRow(id, "horasUsadas", e.target.value)
                               : updateEditingRow(id, "horasUsadas", e.target.value)
                           }
+                          onKeyDown={(e) => handleKeyDown(e, id, "horasUsadas")}
                           className={`h-9 text-xs w-20 ${!isEditing ? "border-0 bg-transparent" : ""}`}
                           readOnly={!isEditing}
                         />
@@ -728,12 +766,14 @@ export default function Atividades() {
                       {/* Observações */}
                       <td className="px-3 py-2">
                         <Textarea
+                          data-field="observacoes"
                           value={data.observacoes || ""}
                           onChange={(e) =>
                             isNew
                               ? updateNewRow(id, "observacoes", e.target.value)
                               : updateEditingRow(id, "observacoes", e.target.value)
                           }
+                          onKeyDown={(e: any) => handleKeyDown(e, id, "observacoes")}
                           className={`h-9 text-xs min-w-[200px] resize-none ${!isEditing ? "border-0 bg-transparent" : ""}`}
                           rows={1}
                           readOnly={!isEditing}
