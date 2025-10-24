@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Zap, Save, Plus, Trash2, Edit } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 // Funções auxiliares para conversão de datas
@@ -36,12 +36,6 @@ const formatInputToBR = (inputDate: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-const convertBRDateToISO = (brDate: string): string => {
-  if (!brDate || brDate.length !== 10) return "";
-  const [day, month, year] = brDate.split('/');
-  return `${year}-${month}-${day}`;
-};
-
 export default function Atividades() {
   const { data: atividades, isLoading, refetch } = trpc.atividades.list.useQuery();
   const { data: projetos } = trpc.projetos.list.useQuery();
@@ -58,44 +52,6 @@ export default function Atividades() {
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; tarefa: string }>({ 
     open: false, id: 0, tarefa: "" 
   });
-
-  // Carregar dados do localStorage ao montar
-  useEffect(() => {
-    const savedNewRows = localStorage.getItem('atividades_newRows');
-    const savedEditingRows = localStorage.getItem('atividades_editingRows');
-    if (savedNewRows) {
-      try {
-        setNewRows(JSON.parse(savedNewRows));
-      } catch (e) {
-        console.error('Erro ao carregar newRows:', e);
-      }
-    }
-    if (savedEditingRows) {
-      try {
-        setEditingRows(JSON.parse(savedEditingRows));
-      } catch (e) {
-        console.error('Erro ao carregar editingRows:', e);
-      }
-    }
-  }, []);
-
-  // Salvar newRows no localStorage sempre que mudar
-  useEffect(() => {
-    if (newRows.length > 0) {
-      localStorage.setItem('atividades_newRows', JSON.stringify(newRows));
-    } else {
-      localStorage.removeItem('atividades_newRows');
-    }
-  }, [newRows]);
-
-  // Salvar editingRows no localStorage sempre que mudar
-  useEffect(() => {
-    if (Object.keys(editingRows).length > 0) {
-      localStorage.setItem('atividades_editingRows', JSON.stringify(editingRows));
-    } else {
-      localStorage.removeItem('atividades_editingRows');
-    }
-  }, [editingRows]);
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
 
   const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
@@ -232,10 +188,9 @@ export default function Atividades() {
     }
   };
 
-  const saveNewRow = async (tempId: string) => {
+  const saveNewRow = async (tempId: number) => {
     const row = newRows.find((r) => r.tempId === tempId);
     if (!row) return;
-    console.log('DEBUG saveNewRow:', row);
 
     const errors: string[] = [];
     if (!row.tarefa) errors.push("tarefa");
@@ -260,7 +215,7 @@ export default function Atividades() {
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
         diasPrevistos: row.diasPrevistos || 0,
-        dataInicio: row.dataInicio ? convertBRDateToISO(row.dataInicio) : undefined,
+        dataInicio: row.dataInicio || null,
         progresso: row.progresso || 0,
         horasUtilizadas: row.horasUsadas || 0,
         observacoes: row.observacoes || "",
@@ -289,7 +244,7 @@ export default function Atividades() {
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
         diasPrevistos: row.diasPrevistos,
-        dataInicio: row.dataInicio ? convertBRDateToISO(row.dataInicio) : undefined,
+        dataInicio: row.dataInicio || null,
         progresso: row.progresso,
         horasUtilizadas: row.horasUsadas,
         observacoes: row.observacoes || "",
