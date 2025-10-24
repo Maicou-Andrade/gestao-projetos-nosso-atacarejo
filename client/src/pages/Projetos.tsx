@@ -151,6 +151,7 @@ export default function Projetos() {
     try {
       await createProjeto.mutateAsync({
         ...row,
+        observacoes: row.observacoes || "",
         responsaveis: row.responsaveis,
       });
       setNewRows((rows) => rows.filter((r) => r.tempId !== tempId));
@@ -188,6 +189,7 @@ export default function Projetos() {
       await updateProjeto.mutateAsync({
         id,
         ...row,
+        observacoes: row.observacoes || "",
         responsaveis: Array.isArray(row.responsaveis) ? row.responsaveis.join(",") : row.responsaveis,
       });
       setEditingRows((prev) => {

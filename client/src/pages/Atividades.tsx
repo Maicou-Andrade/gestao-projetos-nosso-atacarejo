@@ -247,7 +247,7 @@ export default function Atividades() {
         dataInicio: row.dataInicio || null,
         progresso: row.progresso,
         horasUtilizadas: row.horasUsadas,
-        observacoes: row.observacoes,
+        observacoes: row.observacoes || "",
       });
       setEditingRows((prev) => {
         const newState = { ...prev };
