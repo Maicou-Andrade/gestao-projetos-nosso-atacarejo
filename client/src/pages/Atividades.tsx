@@ -91,8 +91,14 @@ export default function Atividades() {
   };
 
   const createAtividadesFromModal = () => {
-    if (!selectedProjeto || qtdAtividades < 1) {
-      toast.error("Selecione um projeto e a quantidade de atividades!");
+    if (!selectedProjeto) {
+      toast.error("Selecione um projeto!");
+      return;
+    }
+    
+    const quantidade = parseInt(String(qtdAtividades)) || 1;
+    if (quantidade < 1 || quantidade > 50) {
+      toast.error("A quantidade deve ser entre 1 e 50 atividades!");
       return;
     }
 
@@ -107,7 +113,7 @@ export default function Atividades() {
           .join(", ")
       : "-";
 
-    const novasAtividades = Array.from({ length: qtdAtividades }, (_, index) => ({
+    const novasAtividades = Array.from({ length: quantidade }, (_, index) => ({
       tempId: Date.now() + index,
       projetoId: projeto.id,
       codigoProjeto: projeto.codigo,
@@ -131,7 +137,7 @@ export default function Atividades() {
     setAddModal(false);
     setSelectedProjeto(null);
     setQtdAtividades(1);
-    toast.success(`${qtdAtividades} atividade(s) adicionada(s)!`);
+    toast.success(`${quantidade} atividade(s) adicionada(s)!`);
   };
 
   const updateNewRow = (tempId: number, field: string, value: any) => {
@@ -709,7 +715,20 @@ export default function Atividades() {
                               <Edit className="h-3 w-3" />
                             </Button>
                           )}
-                          {!isNew && (
+                          {isNew ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewRows(prev => prev.filter(row => row.tempId !== id));
+                                toast.success("Linha removida");
+                              }}
+                              className="hover:bg-red-50 h-7 px-2"
+                            >
+                              <Trash2 className="h-3 w-3 text-red-600" />
+                            </Button>
+                          ) : (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -760,9 +779,19 @@ export default function Atividades() {
               <Input
                 type="number"
                 min="1"
+                max="50"
                 value={qtdAtividades}
-                onChange={(e) => setQtdAtividades(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1 && val <= 50) {
+                    setQtdAtividades(val);
+                  } else if (e.target.value === '') {
+                    setQtdAtividades(1);
+                  }
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-full"
+                placeholder="Digite a quantidade (1-50)"
               />
             </div>
           </div>
