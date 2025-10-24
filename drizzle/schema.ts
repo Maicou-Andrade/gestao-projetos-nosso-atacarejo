@@ -1,17 +1,23 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, datetime } from "drizzle-orm/mysql-core";
+import { pgTable, serial, varchar, text, timestamp, boolean, integer, pgEnum } from "drizzle-orm/pg-core";
+
+/**
+ * Enums para PostgreSQL
+ */
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const prioridadeEnum = pgEnum("prioridade", ["Baixa", "Média", "Alta", "Crítica"]);
 
 /**
  * Core user table backing auth flow.
  */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -21,8 +27,8 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Tabela de Pessoas - Gerenciamento de colaboradores
  */
-export const pessoas = mysqlTable("pessoas", {
-  id: int("id").autoincrement().primaryKey(),
+export const pessoas = pgTable("pessoas", {
+  id: serial("id").primaryKey(),
   codigo: varchar("codigo", { length: 50 }).notNull().unique(),
   nome: varchar("nome", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }),
@@ -34,7 +40,7 @@ export const pessoas = mysqlTable("pessoas", {
   ativo: boolean("ativo").default(true).notNull(),
   observacoes: text("observacoes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Pessoa = typeof pessoas.$inferSelect;
@@ -43,21 +49,21 @@ export type InsertPessoa = typeof pessoas.$inferInsert;
 /**
  * Tabela de Projetos - Controle de projetos
  */
-export const projetos = mysqlTable("projetos", {
-  id: int("id").autoincrement().primaryKey(),
+export const projetos = pgTable("projetos", {
+  id: serial("id").primaryKey(),
   codigo: varchar("codigo", { length: 50 }).notNull().unique(),
   nome: varchar("nome", { length: 255 }).notNull(),
   descricao: text("descricao"),
-  prioridade: mysqlEnum("prioridade", ["Baixa", "Média", "Alta", "Crítica"]).default("Média"),
+  prioridade: prioridadeEnum("prioridade").default("Média"),
   responsaveis: text("responsaveis"), // JSON array de IDs de pessoas
-  inicioPlanejado: datetime("inicioPlanejado"),
-  fimPlanejado: datetime("fimPlanejado"),
+  inicioPlanejado: timestamp("inicioPlanejado"),
+  fimPlanejado: timestamp("fimPlanejado"),
   status: varchar("status", { length: 50 }).default("Planejado"),
-  progresso: int("progresso").default(0), // 0-100, calculado automaticamente
+  progresso: integer("progresso").default(0), // 0-100, calculado automaticamente
   observacoes: text("observacoes"),
   aprovacao: boolean("aprovacao").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Projeto = typeof projetos.$inferSelect;
@@ -66,21 +72,21 @@ export type InsertProjeto = typeof projetos.$inferInsert;
 /**
  * Tabela de Atividades - Tarefas dos projetos
  */
-export const atividades = mysqlTable("atividades", {
-  id: int("id").autoincrement().primaryKey(),
+export const atividades = pgTable("atividades", {
+  id: serial("id").primaryKey(),
   codigo: varchar("codigo", { length: 50 }).notNull().unique(),
-  projetoId: int("projetoId").notNull(),
+  projetoId: integer("projetoId").notNull(),
   tarefa: text("tarefa").notNull(),
   responsaveisTarefa: text("responsaveisTarefa"), // JSON array de IDs de pessoas
   status: varchar("status", { length: 50 }).default("Não Iniciado"),
-  progresso: int("progresso").default(0), // -1 a 100
-  quantidadeHoras: int("quantidadeHoras").default(0),
-  horasUtilizadas: int("horasUtilizadas").default(0),
-  diasPrevistos: int("diasPrevistos"),
-  dataInicio: datetime("dataInicio"),
+  progresso: integer("progresso").default(0), // -1 a 100
+  quantidadeHoras: integer("quantidadeHoras").default(0),
+  horasUtilizadas: integer("horasUtilizadas").default(0),
+  diasPrevistos: integer("diasPrevistos"),
+  dataInicio: timestamp("dataInicio"),
   observacoes: text("observacoes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Atividade = typeof atividades.$inferSelect;
@@ -89,22 +95,22 @@ export type InsertAtividade = typeof atividades.$inferInsert;
 /**
  * Tabela de Subtarefas - Subdivisões das atividades
  */
-export const subtarefas = mysqlTable("subtarefas", {
-  id: int("id").autoincrement().primaryKey(),
+export const subtarefas = pgTable("subtarefas", {
+  id: serial("id").primaryKey(),
   codigo: varchar("codigo", { length: 50 }).notNull().unique(),
-  atividadeId: int("atividadeId").notNull(),
+  atividadeId: integer("atividadeId").notNull(),
   nome: varchar("nome", { length: 255 }).notNull(),
   responsavel: text("responsavel"), // JSON array de IDs de pessoas
-  dataInicio: datetime("dataInicio"),
-  dataFim: datetime("dataFim"),
+  dataInicio: timestamp("dataInicio"),
+  dataFim: timestamp("dataFim"),
   status: varchar("status", { length: 50 }).default("Não Iniciado"),
-  progresso: int("progresso").default(0), // -1 a 100
-  quantidadeHoras: int("quantidadeHoras").default(0),
-  horasUtilizadas: int("horasUtilizadas").default(0),
-  diasPrevistos: int("diasPrevistos"),
+  progresso: integer("progresso").default(0), // -1 a 100
+  quantidadeHoras: integer("quantidadeHoras").default(0),
+  horasUtilizadas: integer("horasUtilizadas").default(0),
+  diasPrevistos: integer("diasPrevistos"),
   observacoes: text("observacoes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Subtarefa = typeof subtarefas.$inferSelect;

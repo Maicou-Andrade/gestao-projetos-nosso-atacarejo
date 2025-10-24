@@ -1,53 +1,492 @@
 {
-  "version": "5",
-  "dialect": "mysql",
-  "id": "0d708f0b-0283-47b0-b45b-f748f8e62b7f",
+  "id": "57c9e552-39f1-471b-bd3f-1d2b6aa1122d",
   "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "users": {
-      "name": "users",
+    "public.atividades": {
+      "name": "atividades",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
         },
-        "openId": {
-          "name": "openId",
-          "type": "varchar(64)",
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
-        "name": {
-          "name": "name",
+        "projetoId": {
+          "name": "projetoId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tarefa": {
+          "name": "tarefa",
           "type": "text",
           "primaryKey": false,
+          "notNull": true
+        },
+        "responsaveisTarefa": {
+          "name": "responsaveisTarefa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "'Não Iniciado'"
+        },
+        "progresso": {
+          "name": "progresso",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "quantidadeHoras": {
+          "name": "quantidadeHoras",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "horasUtilizadas": {
+          "name": "horasUtilizadas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "diasPrevistos": {
+          "name": "diasPrevistos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dataInicio": {
+          "name": "dataInicio",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "atividades_codigo_unique": {
+          "name": "atividades_codigo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "codigo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pessoas": {
+      "name": "pessoas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
         },
         "email": {
           "name": "email",
           "type": "varchar(320)",
           "primaryKey": false,
+          "notNull": false
+        },
+        "telefone": {
+          "name": "telefone",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cargo": {
+          "name": "cargo",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departamento": {
+          "name": "departamento",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "setor": {
+          "name": "setor",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "'Ativo'"
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pessoas_codigo_unique": {
+          "name": "pessoas_codigo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "codigo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.projetos": {
+      "name": "projetos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prioridade": {
+          "name": "prioridade",
+          "type": "prioridade",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Média'"
+        },
+        "responsaveis": {
+          "name": "responsaveis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inicioPlanejado": {
+          "name": "inicioPlanejado",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fimPlanejado": {
+          "name": "fimPlanejado",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Planejado'"
+        },
+        "progresso": {
+          "name": "progresso",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprovacao": {
+          "name": "aprovacao",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "projetos_codigo_unique": {
+          "name": "projetos_codigo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "codigo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.subtarefas": {
+      "name": "subtarefas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "atividadeId": {
+          "name": "atividadeId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "responsavel": {
+          "name": "responsavel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dataInicio": {
+          "name": "dataInicio",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dataFim": {
+          "name": "dataFim",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Não Iniciado'"
+        },
+        "progresso": {
+          "name": "progresso",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "quantidadeHoras": {
+          "name": "quantidadeHoras",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "horasUtilizadas": {
+          "name": "horasUtilizadas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "diasPrevistos": {
+          "name": "diasPrevistos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "subtarefas_codigo_unique": {
+          "name": "subtarefas_codigo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "codigo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "openId": {
+          "name": "openId",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
         },
         "loginMethod": {
           "name": "loginMethod",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "role": {
           "name": "role",
-          "type": "enum('user','admin')",
+          "type": "role",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'user'"
         },
         "createdAt": {
@@ -55,56 +494,68 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "updatedAt": {
           "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         },
         "lastSignedIn": {
           "name": "lastSignedIn",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "users_id": {
-          "name": "users_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "openId"
           ]
         }
       },
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
+  "enums": {
+    "public.prioridade": {
+      "name": "prioridade",
+      "schema": "public",
+      "values": [
+        "Baixa",
+        "Média",
+        "Alta",
+        "Crítica"
+      ]
+    },
+    "public.role": {
+      "name": "role",
+      "schema": "public",
+      "values": [
+        "user",
+        "admin"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
   "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "tables": {},
-    "indexes": {}
+    "tables": {}
   }
 }

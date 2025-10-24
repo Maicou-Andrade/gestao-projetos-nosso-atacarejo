@@ -1,5 +1,6 @@
 import { eq, and, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { 
   InsertUser, 
   users, 
@@ -19,11 +20,16 @@ import {
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
+      });
+      _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -82,7 +88,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    // PostgreSQL usa ON CONFLICT em vez de ON DUPLICATE KEY UPDATE
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -121,15 +129,15 @@ export async function getPessoaById(id: number): Promise<Pessoa | undefined> {
 export async function createPessoa(data: InsertPessoa): Promise<Pessoa> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(pessoas).values(data);
-  return await getPessoaById(Number((result as any).insertId)) as Pessoa;
+  const result = await db.insert(pessoas).values(data).returning();
+  return result[0];
 }
 
 export async function updatePessoa(id: number, data: Partial<InsertPessoa>): Promise<Pessoa> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(pessoas).set(data).where(eq(pessoas.id, id));
-  return await getPessoaById(id) as Pessoa;
+  const result = await db.update(pessoas).set(data).where(eq(pessoas.id, id)).returning();
+  return result[0];
 }
 
 export async function deletePessoa(id: number): Promise<void> {
@@ -156,15 +164,15 @@ export async function getProjetoById(id: number): Promise<Projeto | undefined> {
 export async function createProjeto(data: InsertProjeto): Promise<Projeto> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(projetos).values(data);
-  return await getProjetoById(Number((result as any).insertId)) as Projeto;
+  const result = await db.insert(projetos).values(data).returning();
+  return result[0];
 }
 
 export async function updateProjeto(id: number, data: Partial<InsertProjeto>): Promise<Projeto> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(projetos).set(data).where(eq(projetos.id, id));
-  return await getProjetoById(id) as Projeto;
+  const result = await db.update(projetos).set(data).where(eq(projetos.id, id)).returning();
+  return result[0];
 }
 
 export async function deleteProjeto(id: number): Promise<void> {
@@ -197,19 +205,15 @@ export async function getAtividadeById(id: number): Promise<Atividade | undefine
 export async function createAtividade(data: InsertAtividade): Promise<Atividade> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(atividades).values(data);
-  const insertId = Number(result.insertId);
-  if (!insertId || isNaN(insertId)) {
-    throw new Error(`Failed to get insertId from database`);
-  }
-  return await getAtividadeById(insertId) as Atividade;
+  const result = await db.insert(atividades).values(data).returning();
+  return result[0];
 }
 
 export async function updateAtividade(id: number, data: Partial<InsertAtividade>): Promise<Atividade> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(atividades).set(data).where(eq(atividades.id, id));
-  return await getAtividadeById(id) as Atividade;
+  const result = await db.update(atividades).set(data).where(eq(atividades.id, id)).returning();
+  return result[0];
 }
 
 export async function deleteAtividade(id: number): Promise<void> {
@@ -242,15 +246,15 @@ export async function getSubtarefaById(id: number): Promise<Subtarefa | undefine
 export async function createSubtarefa(data: InsertSubtarefa): Promise<Subtarefa> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(subtarefas).values(data);
-  return await getSubtarefaById(Number((result as any).insertId)) as Subtarefa;
+  const result = await db.insert(subtarefas).values(data).returning();
+  return result[0];
 }
 
 export async function updateSubtarefa(id: number, data: Partial<InsertSubtarefa>): Promise<Subtarefa> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(subtarefas).set(data).where(eq(subtarefas.id, id));
-  return await getSubtarefaById(id) as Subtarefa;
+  const result = await db.update(subtarefas).set(data).where(eq(subtarefas.id, id)).returning();
+  return result[0];
 }
 
 export async function deleteSubtarefa(id: number): Promise<void> {
