@@ -14,6 +14,28 @@ import { Zap, Save, Plus, Trash2, Edit } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+// Funções auxiliares para conversão de datas
+const formatDateToBR = (dateStr: string | Date | null): string => {
+  if (!dateStr) return "";
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatDateToInput = (brDate: string): string => {
+  if (!brDate || brDate.length !== 10) return "";
+  const [day, month, year] = brDate.split('/');
+  return `${year}-${month}-${day}`;
+};
+
+const formatInputToBR = (inputDate: string): string => {
+  if (!inputDate) return "";
+  const [year, month, day] = inputDate.split('-');
+  return `${day}/${month}/${year}`;
+};
+
 export default function Atividades() {
   const { data: atividades, isLoading, refetch } = trpc.atividades.list.useQuery();
   const { data: projetos } = trpc.projetos.list.useQuery();
@@ -103,10 +125,10 @@ export default function Atividades() {
               const [ano, mes, dia] = updated.dataInicio.split('-').map(Number);
               const dataInicio = new Date(ano, mes - 1, dia);
               dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
-              const anoFim = dataInicio.getFullYear();
-              const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
               const diaFim = String(dataInicio.getDate()).padStart(2, '0');
-              updated.previsaoEntrega = `${anoFim}-${mesFim}-${diaFim}`;
+              const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
+              const anoFim = dataInicio.getFullYear();
+              updated.previsaoEntrega = `${diaFim}/${mesFim}/${anoFim}`;
             } else {
               updated.previsaoEntrega = "";
             }
@@ -134,10 +156,10 @@ export default function Atividades() {
           const [ano, mes, dia] = updated.dataInicio.split('-').map(Number);
           const dataInicio = new Date(ano, mes - 1, dia);
           dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
-          const anoFim = dataInicio.getFullYear();
-          const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
           const diaFim = String(dataInicio.getDate()).padStart(2, '0');
-          updated.previsaoEntrega = `${anoFim}-${mesFim}-${diaFim}`;
+          const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
+          const anoFim = dataInicio.getFullYear();
+          updated.previsaoEntrega = `${diaFim}/${mesFim}/${anoFim}`;
         } else {
           updated.previsaoEntrega = "";
         }
@@ -297,10 +319,10 @@ export default function Atividades() {
               const [ano, mes, dia] = dataStr.split('-').map(Number);
               const dataInicio = new Date(ano, mes - 1, dia);
               dataInicio.setDate(dataInicio.getDate() + atividade.diasPrevistos);
-              const anoFim = dataInicio.getFullYear();
-              const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
               const diaFim = String(dataInicio.getDate()).padStart(2, '0');
-              return `${anoFim}-${mesFim}-${diaFim}`;
+              const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
+              const anoFim = dataInicio.getFullYear();
+              return `${diaFim}/${mesFim}/${anoFim}`;
             })()
           : "",
       };
@@ -419,14 +441,14 @@ export default function Atividades() {
                       {/* Início Plan. */}
                       <td className="px-3 py-2">
                         <span className="text-xs">
-                          {data.inicioPlanejado ? new Date(data.inicioPlanejado).toLocaleDateString("pt-BR") : "-"}
+                          {data.inicioPlanejado ? formatDateToBR(data.inicioPlanejado) : "-"}
                         </span>
                       </td>
 
                       {/* Fim Plan. */}
                       <td className="px-3 py-2">
                         <span className="text-xs">
-                          {data.fimPlanejado ? new Date(data.fimPlanejado).toLocaleDateString("pt-BR") : "-"}
+                          {data.fimPlanejado ? formatDateToBR(data.fimPlanejado) : "-"}
                         </span>
                       </td>
 
@@ -504,9 +526,7 @@ export default function Atividades() {
                       {/* Prev. Entrega (calculado) */}
                       <td className="px-3 py-2">
                         <span className="text-xs px-2 py-1 bg-gray-100 rounded">
-                          {data.previsaoEntrega
-                            ? new Date(data.previsaoEntrega).toLocaleDateString("pt-BR")
-                            : "-"}
+                          {data.previsaoEntrega || "-"}
                         </span>
                       </td>
 

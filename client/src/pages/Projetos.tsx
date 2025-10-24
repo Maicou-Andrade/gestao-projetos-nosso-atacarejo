@@ -16,6 +16,16 @@ import { Folder, Save, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+// Funções auxiliares para conversão de datas
+const formatDateToBR = (dateStr: string | Date | null): string => {
+  if (!dateStr) return "";
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 export default function Projetos() {
   const { data: projetos, isLoading, refetch } = trpc.projetos.list.useQuery();
   const { data: pessoas } = trpc.pessoas.list.useQuery();
@@ -509,10 +519,10 @@ export default function Projetos() {
                         </td>
 
                         <td className="px-3 py-2 text-xs text-center bg-gray-100">
-                          {!isNew && data.inicioReal ? new Date(data.inicioReal).toLocaleDateString('pt-BR') : '-'}
+                          {!isNew && data.inicioReal ? formatDateToBR(data.inicioReal) : '-'}
                         </td>
                         <td className="px-3 py-2 text-xs text-center bg-gray-100">
-                          {!isNew && data.fimPrevisto ? new Date(data.fimPrevisto).toLocaleDateString('pt-BR') : '-'}
+                          {!isNew && data.fimPrevisto ? formatDateToBR(data.fimPrevisto) : '-'}
                         </td>
                         <td className="px-3 py-2 text-xs text-center bg-gray-100">
                           {!isNew ? `${data.qtdHoras || 0}h` : '0h'}
