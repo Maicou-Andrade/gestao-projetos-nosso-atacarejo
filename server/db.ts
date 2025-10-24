@@ -311,3 +311,79 @@ export function calcularStatus(progresso: number): string {
   return "Não Iniciado";
 }
 
+
+
+/**
+ * Calcula todas as estatísticas de um projeto baseado nas atividades
+ */
+export async function calcularEstatisticasProjeto(projetoId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const atividadesDoProjeto = await getAtividadesByProjetoId(projetoId);
+  
+  const totalTarefas = atividadesDoProjeto.length;
+  const emAndamento = atividadesDoProjeto.filter(a => a.status === "Em Andamento").length;
+  const finalizadas = atividadesDoProjeto.filter(a => a.status === "Concluído" || a.status === "Finalizado").length;
+  const naoIniciado = atividadesDoProjeto.filter(a => a.status === "Não Iniciado").length;
+  const cancelado = atividadesDoProjeto.filter(a => a.status === "Cancelado").length;
+  
+  // Calcular total de horas
+  const qtdHoras = atividadesDoProjeto.reduce((sum, a) => sum + (a.quantidadeHoras || 0), 0);
+  
+  // Início Real (menor dataInicio das atividades)
+  const datasInicio = atividadesDoProjeto
+    .filter(a => a.dataInicio)
+    .map(a => new Date(a.dataInicio!).getTime());
+  const inicioReal = datasInicio.length > 0 ? new Date(Math.min(...datasInicio)) : null;
+  
+  // Fim Previsto (maior dataInicio + diasPrevistos)
+  let fimPrevisto: Date | null = null;
+  for (const atividade of atividadesDoProjeto) {
+    if (atividade.dataInicio && atividade.diasPrevistos) {
+      const fimAtividade = new Date(atividade.dataInicio);
+      fimAtividade.setDate(fimAtividade.getDate() + atividade.diasPrevistos);
+      if (!fimPrevisto || fimAtividade > fimPrevisto) {
+        fimPrevisto = fimAtividade;
+      }
+    }
+  }
+  
+  // Calcular progresso geral
+  const progressoGeral = await calcularProgressoProjeto(projetoId);
+  
+  // Calcular status de prazo (dentro/fora do prazo)
+  const hoje = new Date();
+  let dentroPrazo = 0;
+  let foraPrazo = 0;
+  
+  for (const atividade of atividadesDoProjeto) {
+    if (atividade.dataInicio && atividade.diasPrevistos) {
+      const fimPrevisto = new Date(atividade.dataInicio);
+      fimPrevisto.setDate(fimPrevisto.getDate() + atividade.diasPrevistos);
+      
+      if (atividade.status === "Concluído" || atividade.status === "Finalizado") {
+        dentroPrazo++;
+      } else if (hoje > fimPrevisto) {
+        foraPrazo++;
+      } else {
+        dentroPrazo++;
+      }
+    }
+  }
+  
+  return {
+    totalTarefas,
+    emAndamento,
+    finalizadas,
+    naoIniciado,
+    cancelado,
+    qtdHoras,
+    inicioReal,
+    fimPrevisto,
+    progressoGeral,
+    dentroPrazo,
+    foraPrazo,
+  };
+}
+

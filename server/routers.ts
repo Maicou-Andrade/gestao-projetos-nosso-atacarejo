@@ -79,14 +79,14 @@ export const appRouter = router({
   projetos: router({
     list: protectedProcedure.query(async () => {
       const projetosList = await db.getAllProjetos();
-      // Calcular progresso para cada projeto
-      const projetosComProgresso = await Promise.all(
+      // Calcular estatísticas para cada projeto
+      const projetosComEstatisticas = await Promise.all(
         projetosList.map(async (projeto) => {
-          const progresso = await db.calcularProgressoProjeto(projeto.id);
-          return { ...projeto, progresso };
+          const estatisticas = await db.calcularEstatisticasProjeto(projeto.id);
+          return { ...projeto, ...estatisticas };
         })
       );
-      return projetosComProgresso;
+      return projetosComEstatisticas;
     }),
 
     getById: protectedProcedure
