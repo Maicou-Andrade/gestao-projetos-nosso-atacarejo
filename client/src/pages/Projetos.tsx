@@ -425,6 +425,7 @@ export default function Projetos() {
                                 : updateEditingRow(id, "aprovacao", checked))
                             }
                             disabled={!isEditing}
+                            className="border-2 border-blue-600 data-[state=checked]:bg-blue-600"
                           />
                         </td>
 
