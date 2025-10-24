@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Zap, Save, Plus, Trash2, Edit } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 // Funções auxiliares para conversão de datas
@@ -58,6 +58,44 @@ export default function Atividades() {
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; tarefa: string }>({ 
     open: false, id: 0, tarefa: "" 
   });
+
+  // Carregar dados do localStorage ao montar
+  useEffect(() => {
+    const savedNewRows = localStorage.getItem('atividades_newRows');
+    const savedEditingRows = localStorage.getItem('atividades_editingRows');
+    if (savedNewRows) {
+      try {
+        setNewRows(JSON.parse(savedNewRows));
+      } catch (e) {
+        console.error('Erro ao carregar newRows:', e);
+      }
+    }
+    if (savedEditingRows) {
+      try {
+        setEditingRows(JSON.parse(savedEditingRows));
+      } catch (e) {
+        console.error('Erro ao carregar editingRows:', e);
+      }
+    }
+  }, []);
+
+  // Salvar newRows no localStorage sempre que mudar
+  useEffect(() => {
+    if (newRows.length > 0) {
+      localStorage.setItem('atividades_newRows', JSON.stringify(newRows));
+    } else {
+      localStorage.removeItem('atividades_newRows');
+    }
+  }, [newRows]);
+
+  // Salvar editingRows no localStorage sempre que mudar
+  useEffect(() => {
+    if (Object.keys(editingRows).length > 0) {
+      localStorage.setItem('atividades_editingRows', JSON.stringify(editingRows));
+    } else {
+      localStorage.removeItem('atividades_editingRows');
+    }
+  }, [editingRows]);
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
 
   const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Folder, Save, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 // Funções auxiliares para conversão de datas
@@ -37,6 +37,44 @@ export default function Projetos() {
   const [newRows, setNewRows] = useState<any[]>([]);
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; nome: string }>({ open: false, id: 0, nome: "" });
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
+
+  // Carregar dados do localStorage ao montar
+  useEffect(() => {
+    const savedNewRows = localStorage.getItem('projetos_newRows');
+    const savedEditingRows = localStorage.getItem('projetos_editingRows');
+    if (savedNewRows) {
+      try {
+        setNewRows(JSON.parse(savedNewRows));
+      } catch (e) {
+        console.error('Erro ao carregar newRows:', e);
+      }
+    }
+    if (savedEditingRows) {
+      try {
+        setEditingRows(JSON.parse(savedEditingRows));
+      } catch (e) {
+        console.error('Erro ao carregar editingRows:', e);
+      }
+    }
+  }, []);
+
+  // Salvar newRows no localStorage sempre que mudar
+  useEffect(() => {
+    if (newRows.length > 0) {
+      localStorage.setItem('projetos_newRows', JSON.stringify(newRows));
+    } else {
+      localStorage.removeItem('projetos_newRows');
+    }
+  }, [newRows]);
+
+  // Salvar editingRows no localStorage sempre que mudar
+  useEffect(() => {
+    if (Object.keys(editingRows).length > 0) {
+      localStorage.setItem('projetos_editingRows', JSON.stringify(editingRows));
+    } else {
+      localStorage.removeItem('projetos_editingRows');
+    }
+  }, [editingRows]);
 
   const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
 

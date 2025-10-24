@@ -11,7 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { Users, Trash2, Edit, Save } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function Pessoas() {
@@ -34,6 +34,33 @@ export default function Pessoas() {
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; nome: string }>({ 
     open: false, id: 0, nome: "" 
   });
+
+  // Carregar dados do localStorage ao montar
+  useEffect(() => {
+    const savedFormData = localStorage.getItem('pessoas_formData');
+    const savedIsModalOpen = localStorage.getItem('pessoas_isModalOpen');
+    if (savedFormData) {
+      try {
+        setFormData(JSON.parse(savedFormData));
+      } catch (e) {
+        console.error('Erro ao carregar formData:', e);
+      }
+    }
+    if (savedIsModalOpen === 'true') {
+      setIsModalOpen(true);
+    }
+  }, []);
+
+  // Salvar formData no localStorage sempre que mudar
+  useEffect(() => {
+    if (isModalOpen && (formData.nome || formData.email || formData.telefone)) {
+      localStorage.setItem('pessoas_formData', JSON.stringify(formData));
+      localStorage.setItem('pessoas_isModalOpen', 'true');
+    } else if (!isModalOpen) {
+      localStorage.removeItem('pessoas_formData');
+      localStorage.removeItem('pessoas_isModalOpen');
+    }
+  }, [formData, isModalOpen]);
 
   const openModal = (pessoa?: any) => {
     if (pessoa) {
