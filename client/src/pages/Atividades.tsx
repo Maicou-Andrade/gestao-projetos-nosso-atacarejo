@@ -262,10 +262,10 @@ export default function Atividades() {
         projetoId: row.projetoId,
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
-        diasPrevistos: row.diasPrevistos || 0,
+        diasPrevistos: row.diasPrevistos ? Number(row.diasPrevistos) : 0,
         dataInicio: dataInicioISO,
-        progresso: row.progresso || 0,
-        horasUtilizadas: row.horasUsadas || 0,
+        progresso: row.progresso ? Number(row.progresso) : 0,
+        horasUtilizadas: row.horasUsadas ? Number(row.horasUsadas) : 0,
         observacoes: row.observacoes || "",
       };
       
@@ -309,10 +309,10 @@ export default function Atividades() {
         id,
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
-        diasPrevistos: row.diasPrevistos,
+        diasPrevistos: row.diasPrevistos ? Number(row.diasPrevistos) : undefined,
         dataInicio: dataInicioISO,
-        progresso: row.progresso,
-        horasUtilizadas: row.horasUsadas,
+        progresso: row.progresso ? Number(row.progresso) : undefined,
+        horasUtilizadas: row.horasUsadas ? Number(row.horasUsadas) : undefined,
         observacoes: row.observacoes || "",
       });
       setEditingRows((prev) => {
