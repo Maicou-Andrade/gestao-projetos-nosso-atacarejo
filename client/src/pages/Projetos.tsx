@@ -170,7 +170,9 @@ export default function Projetos() {
     if (!row.descricao) errors.push("descricao");
     if (!row.inicioPlanejado) errors.push("inicioPlanejado");
     if (!row.fimPlanejado) errors.push("fimPlanejado");
-    if (!row.responsaveis) errors.push("responsaveis");
+    if (!row.responsaveis || (Array.isArray(row.responsaveis) && row.responsaveis.length === 0)) {
+      errors.push("responsaveis");
+    }
 
     if (errors.length > 0) {
       setValidationErrors((prev) => ({ ...prev, [id]: errors }));
@@ -185,11 +187,13 @@ export default function Projetos() {
     });
 
     try {
-      await updateProjeto.mutateAsync({
+      const dataToSave = {
         id,
         ...row,
+        aprovacao: row.aprovacao === true || row.aprovacao === 1 || row.aprovacao === "true",
         responsaveis: Array.isArray(row.responsaveis) ? row.responsaveis.join(",") : row.responsaveis,
-      });
+      };
+      await updateProjeto.mutateAsync(dataToSave);
       setEditingRows((prev) => {
         const newState = { ...prev };
         delete newState[id];
