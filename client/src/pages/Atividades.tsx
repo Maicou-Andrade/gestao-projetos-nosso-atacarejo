@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Zap, Save, Plus, Trash2, Edit } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 // Funções auxiliares para conversão de datas
@@ -56,6 +56,27 @@ export default function Atividades() {
 
   const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
   const projetosAtivos = projetos || [];
+
+  // Persistência: carregar do localStorage ao montar
+  useEffect(() => {
+    const saved = localStorage.getItem('atividades_newRows');
+    if (saved) {
+      try {
+        setNewRows(JSON.parse(saved));
+      } catch (e) {
+        console.error('Erro ao carregar newRows:', e);
+      }
+    }
+  }, []);
+
+  // Persistência: salvar no localStorage quando newRows mudar
+  useEffect(() => {
+    if (newRows.length > 0) {
+      localStorage.setItem('atividades_newRows', JSON.stringify(newRows));
+    } else {
+      localStorage.removeItem('atividades_newRows');
+    }
+  }, [newRows]);
 
   // Calcular resumo
   const totalAtividades = (atividades?.length || 0) + newRows.length;

@@ -197,8 +197,12 @@ export async function getAtividadeById(id: number): Promise<Atividade | undefine
 export async function createAtividade(data: InsertAtividade): Promise<Atividade> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(atividades).values(data);
-  return await getAtividadeById(Number((result as any).insertId)) as Atividade;
+  const [result] = await db.insert(atividades).values(data);
+  const insertId = Number(result.insertId);
+  if (!insertId || isNaN(insertId)) {
+    throw new Error(`Failed to get insertId from database`);
+  }
+  return await getAtividadeById(insertId) as Atividade;
 }
 
 export async function updateAtividade(id: number, data: Partial<InsertAtividade>): Promise<Atividade> {
