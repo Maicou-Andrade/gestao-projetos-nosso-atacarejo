@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE projetos SET responsaveis = '1' WHERE codigo IN ('PROJ001', 'PROJ002', 'PROJ003', 'PROJ004', 'PROJ005', 'PROJ006', 'PROJ007', 'PROJ008', 'PROJ009', 'PROJ010');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QLSPjpjHCdPShhN.6826122015af --database VhNyHqj95H5CZvQTkbi6FP --execute UPDATE projetos SET responsaveis = '1' WHERE codigo IN ('PROJ001', 'PROJ002', 'PROJ003', 'PROJ004', 'PROJ005', 'PROJ006', 'PROJ007', 'PROJ008', 'PROJ009', 'PROJ010');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 53
+}
