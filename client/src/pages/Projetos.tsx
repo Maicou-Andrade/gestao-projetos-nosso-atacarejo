@@ -268,6 +268,7 @@ export default function Projetos() {
                     <th className="px-3 py-3 text-left font-bold uppercase whitespace-nowrap">Início Plan. *</th>
                     <th className="px-3 py-3 text-left font-bold uppercase whitespace-nowrap">Fim Plan. *</th>
                     <th className="px-3 py-3 text-center font-bold uppercase whitespace-nowrap">Aprovação</th>
+                    <th className="px-3 py-3 text-center font-bold uppercase whitespace-nowrap bg-gray-700">Status</th>
                     <th className="px-3 py-3 text-left font-bold uppercase whitespace-nowrap bg-gray-700">Início Real</th>
                     <th className="px-3 py-3 text-left font-bold uppercase whitespace-nowrap bg-gray-700">Fim Previsto</th>
                     <th className="px-3 py-3 text-center font-bold uppercase whitespace-nowrap bg-gray-700">Qtd Horas</th>
@@ -448,17 +449,121 @@ export default function Projetos() {
                           />
                         </td>
 
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">-</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">-</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0h</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0</td>
-                        <td className="px-3 py-2 text-xs text-center bg-gray-100">0%</td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {(() => {
+                            const progresso = data.progressoGeral || 0;
+                            const aprovado = data.aprovacao || false;
+                            
+                            let statusTexto = "Não Iniciado";
+                            let statusCor = "#dc2626"; // Vermelho
+                            let statusBg = "#fee2e2"; // Vermelho claro fundo
+                            
+                            if (!aprovado) {
+                              statusTexto = "Aguardando Aprovação";
+                              statusCor = "#6b7280"; // Cinza
+                              statusBg = "#f3f4f6";
+                            } else if (progresso === -1) {
+                              statusTexto = "Cancelado";
+                              statusCor = "#ff0000"; // Vermelho Ferrari
+                              statusBg = "#fee2e2";
+                            } else if (progresso === 0) {
+                              statusTexto = "Não Iniciado";
+                              statusCor = "#dc2626"; // Vermelho
+                              statusBg = "#fee2e2";
+                            } else if (progresso === 100) {
+                              statusTexto = "Concluído";
+                              statusCor = "#16a34a"; // Verde
+                              statusBg = "#dcfce7"; // Verde claro fundo
+                            } else if (progresso > 0 && progresso < 100) {
+                              statusTexto = "Em Andamento";
+                              if (progresso <= 20) {
+                                statusCor = "#f87171"; // Vermelho claro
+                                statusBg = "#fee2e2";
+                              } else if (progresso <= 50) {
+                                statusCor = "#fb923c"; // Vermelho mais fraco (laranja)
+                                statusBg = "#ffedd5";
+                              } else if (progresso <= 70) {
+                                statusCor = "#eab308"; // Amarelo
+                                statusBg = "#fef9c3";
+                              } else if (progresso <= 90) {
+                                statusCor = "#facc15"; // Amarelo fraco
+                                statusBg = "#fef9c3";
+                              } else {
+                                statusCor = "#22c55e"; // Verde
+                                statusBg = "#dcfce7";
+                              }
+                            }
+                            
+                            return (
+                              <span 
+                                className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                                style={{ 
+                                  color: statusCor,
+                                  backgroundColor: statusBg
+                                }}
+                              >
+                                {statusTexto}
+                              </span>
+                            );
+                          })()}
+                        </td>
+
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew && data.inicioReal ? new Date(data.inicioReal).toLocaleDateString('pt-BR') : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew && data.fimPrevisto ? new Date(data.fimPrevisto).toLocaleDateString('pt-BR') : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? `${data.qtdHoras || 0}h` : '0h'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.totalTarefas || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.emAndamento || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.finalizadas || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.naoIniciado || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.cancelado || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.dentroPrazo || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-center bg-gray-100">
+                          {!isNew ? data.foraPrazo || 0 : 0}
+                        </td>
+                        <td className="px-3 py-2 bg-gray-100">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-300 rounded-full h-4 overflow-hidden">
+                              <div
+                                className="h-full flex items-center justify-center text-[10px] font-bold transition-all text-white"
+                                style={{ 
+                                  width: `${Math.max(0, data.progressoGeral || 0)}%`,
+                                  backgroundColor: (() => {
+                                    const progresso = data.progressoGeral || 0;
+                                    if (progresso === -1) return "#ff0000"; // Vermelho Ferrari (Cancelado)
+                                    if (progresso === 0) return "#dc2626"; // Vermelho (Não Iniciado)
+                                    if (progresso === 100) return "#16a34a"; // Verde (Concluído)
+                                    if (progresso <= 20) return "#f87171"; // Vermelho claro
+                                    if (progresso <= 50) return "#fb923c"; // Laranja
+                                    if (progresso <= 70) return "#eab308"; // Amarelo
+                                    if (progresso <= 90) return "#facc15"; // Amarelo fraco
+                                    return "#22c55e"; // Verde (91-99%)
+                                  })()
+                                }}
+                              >
+                                {(data.progressoGeral || 0) > 10 && `${Math.round(data.progressoGeral || 0)}%`}
+                              </div>
+                            </div>
+                            <span className="text-xs font-semibold min-w-[35px] text-right">{Math.round(data.progressoGeral || 0)}%</span>
+                          </div>
+                        </td>
 
                         <td className="px-3 py-2 text-center bg-white sticky right-0">
                           {isEditing ? (

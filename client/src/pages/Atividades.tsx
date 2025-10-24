@@ -100,7 +100,7 @@ export default function Atividades() {
           // Calcular Prev. Entrega
           if (field === "dataInicio" || field === "diasPrevistos") {
             if (updated.dataInicio && updated.diasPrevistos > 0) {
-              const dataInicio = new Date(updated.dataInicio);
+              const dataInicio = new Date(updated.dataInicio + 'T00:00:00');
               dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
               updated.previsaoEntrega = dataInicio.toISOString().split("T")[0];
             } else {
@@ -127,7 +127,7 @@ export default function Atividades() {
       // Calcular Prev. Entrega
       if (field === "dataInicio" || field === "diasPrevistos") {
         if (updated.dataInicio && updated.diasPrevistos > 0) {
-          const dataInicio = new Date(updated.dataInicio);
+          const dataInicio = new Date(updated.dataInicio + 'T00:00:00');
           dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
           updated.previsaoEntrega = dataInicio.toISOString().split("T")[0];
         } else {
@@ -282,7 +282,11 @@ export default function Atividades() {
         fimPlanejado: projeto?.fimPlanejado,
         qtdHoras: (atividade.diasPrevistos || 0) * 7,
         previsaoEntrega: atividade.dataInicio && atividade.diasPrevistos
-          ? new Date(new Date(atividade.dataInicio).getTime() + atividade.diasPrevistos * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+          ? (() => {
+              const dataInicio = new Date(atividade.dataInicio);
+              dataInicio.setDate(dataInicio.getDate() + atividade.diasPrevistos);
+              return dataInicio.toISOString().split("T")[0];
+            })()
           : "",
       };
     }),
