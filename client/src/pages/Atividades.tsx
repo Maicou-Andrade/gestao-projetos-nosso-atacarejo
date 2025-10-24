@@ -36,6 +36,12 @@ const formatInputToBR = (inputDate: string): string => {
   return `${day}/${month}/${year}`;
 };
 
+const convertBRDateToISO = (brDate: string): string => {
+  if (!brDate || brDate.length !== 10) return "";
+  const [day, month, year] = brDate.split('/');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Atividades() {
   const { data: atividades, isLoading, refetch } = trpc.atividades.list.useQuery();
   const { data: projetos } = trpc.projetos.list.useQuery();
@@ -188,9 +194,10 @@ export default function Atividades() {
     }
   };
 
-  const saveNewRow = async (tempId: number) => {
+  const saveNewRow = async (tempId: string) => {
     const row = newRows.find((r) => r.tempId === tempId);
     if (!row) return;
+    console.log('DEBUG saveNewRow:', row);
 
     const errors: string[] = [];
     if (!row.tarefa) errors.push("tarefa");
@@ -215,7 +222,7 @@ export default function Atividades() {
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
         diasPrevistos: row.diasPrevistos || 0,
-        dataInicio: row.dataInicio || null,
+        dataInicio: row.dataInicio ? convertBRDateToISO(row.dataInicio) : undefined,
         progresso: row.progresso || 0,
         horasUtilizadas: row.horasUsadas || 0,
         observacoes: row.observacoes || "",
@@ -244,7 +251,7 @@ export default function Atividades() {
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
         diasPrevistos: row.diasPrevistos,
-        dataInicio: row.dataInicio || null,
+        dataInicio: row.dataInicio ? convertBRDateToISO(row.dataInicio) : undefined,
         progresso: row.progresso,
         horasUtilizadas: row.horasUsadas,
         observacoes: row.observacoes || "",
