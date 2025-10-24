@@ -31,11 +31,14 @@ export default function Projetos() {
   const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
 
   const addNewRow = () => {
+    const nextNumber = (projetos?.length || 0) + newRows.length + 1;
+    const codigo = `PROJ${nextNumber}`;
+    
     setNewRows([
       ...newRows,
       {
         tempId: Date.now(),
-        codigo: "",
+        codigo,
         nome: "",
         descricao: "",
         prioridade: "Média",
@@ -117,7 +120,6 @@ export default function Projetos() {
     if (!row) return;
 
     const errors: string[] = [];
-    if (!row.codigo) errors.push("codigo");
     if (!row.nome) errors.push("nome");
     if (!row.descricao) errors.push("descricao");
     if (!row.inicioPlanejado) errors.push("inicioPlanejado");
@@ -292,14 +294,8 @@ export default function Projetos() {
                         <td className="px-3 py-2">
                           <Input
                             value={data.codigo || ""}
-                            onChange={(e) =>
-                              isNew
-                                ? updateNewRow(id, "codigo", e.target.value)
-                                : updateEditingRow(id, "codigo", e.target.value)
-                            }
-                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("codigo") ? "border-2 border-red-500" : ""}`}
-                            placeholder="PRJ001"
-                            readOnly={!isEditing}
+                            className="h-9 text-xs border-0 bg-gray-100 text-gray-700 font-mono"
+                            readOnly
                           />
                         </td>
 
@@ -365,28 +361,25 @@ export default function Projetos() {
 
                         <td className="px-3 py-2">
                           {isEditing ? (
-                            <div className="relative group">
-                              <Input
-                                value={responsaveisNomes}
-                                readOnly
-                                className={`h-9 text-xs min-w-[180px] cursor-pointer ${errors.includes("responsaveis") ? "border-2 border-red-500" : ""}`}
-                                placeholder="Selecione..."
-                              />
-                              <div className="absolute hidden group-hover:block bg-white border-2 border-[#005CA9] rounded-md p-3 z-20 max-h-48 overflow-y-auto shadow-xl top-full left-0 mt-1">
-                                {pessoasAtivas.map((pessoa) => (
-                                  <label
-                                    key={pessoa.id}
-                                    className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer text-xs whitespace-nowrap"
-                                  >
-                                    <Checkbox
-                                      checked={responsaveisArray.includes(pessoa.id)}
-                                      onCheckedChange={() => toggleResponsavel(id, pessoa.id, isNew)}
-                                    />
-                                    <span>{pessoa.nome}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
+                            <select
+                              value={responsaveisArray[0] || ""}
+                              onChange={(e) => {
+                                const newValue = e.target.value ? [parseInt(e.target.value)] : [];
+                                if (isNew) {
+                                  updateNewRow(id, "responsaveis", newValue);
+                                } else {
+                                  updateEditingRow(id, "responsaveis", newValue);
+                                }
+                              }}
+                              className={`h-9 text-xs border rounded px-2 w-full min-w-[180px] ${errors.includes("responsaveis") ? "border-2 border-red-500" : ""}`}
+                            >
+                              <option value="">Selecione...</option>
+                              {pessoasAtivas.map((pessoa) => (
+                                <option key={pessoa.id} value={pessoa.id}>
+                                  {pessoa.nome}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <span className="text-xs px-2 max-w-[180px] truncate block" title={responsaveisNomes}>
                               {responsaveisNomes}
