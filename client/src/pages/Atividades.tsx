@@ -221,7 +221,15 @@ export default function Atividades() {
 
     const errors: string[] = [];
     if (!row.tarefa) errors.push("tarefa");
-    if (!row.responsavelId) errors.push("responsavelId");
+    if (!row.responsavelId || row.responsavelId === null) errors.push("responsavelId");
+    
+    console.log("Validando atividade:", {
+      tarefa: row.tarefa,
+      responsavelId: row.responsavelId,
+      projetoId: row.projetoId,
+      dataInicio: row.dataInicio,
+      errors
+    });
 
     if (errors.length > 0) {
       setValidationErrors((prev) => ({ ...prev, [tempId]: errors }));
@@ -236,22 +244,40 @@ export default function Atividades() {
     });
 
     try {
-      await createAtividade.mutateAsync({
+      // Converter dataInicio para formato ISO se existir
+      let dataInicioISO: string | undefined = undefined;
+      if (row.dataInicio) {
+        // Se já está no formato yyyy-mm-dd, usar diretamente
+        if (/^\d{4}-\d{2}-\d{2}$/.test(row.dataInicio)) {
+          dataInicioISO = row.dataInicio;
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(row.dataInicio)) {
+          // Se está no formato dd/mm/yyyy, converter para yyyy-mm-dd
+          const [day, month, year] = row.dataInicio.split('/');
+          dataInicioISO = `${year}-${month}-${day}`;
+        }
+      }
+
+      const payload = {
         codigo: `AT${Date.now()}`,
         projetoId: row.projetoId,
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
         diasPrevistos: row.diasPrevistos || 0,
-        dataInicio: row.dataInicio || undefined,
+        dataInicio: dataInicioISO,
         progresso: row.progresso || 0,
         horasUtilizadas: row.horasUsadas || 0,
         observacoes: row.observacoes || "",
-      });
+      };
+      
+      console.log("Enviando atividade para o backend:", payload);
+      
+      await createAtividade.mutateAsync(payload);
       setNewRows((rows) => rows.filter((r) => r.tempId !== tempId));
       await refetch();
       toast.success("Atividade cadastrada!");
     } catch (error) {
-      toast.error("Erro ao cadastrar atividade");
+      console.error("Erro ao cadastrar atividade:", error);
+      toast.error(`Erro ao cadastrar atividade: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   };
 
@@ -266,12 +292,25 @@ export default function Atividades() {
     if (!row) return;
 
     try {
+      // Converter dataInicio para formato ISO se existir
+      let dataInicioISO: string | undefined = undefined;
+      if (row.dataInicio) {
+        // Se já está no formato yyyy-mm-dd, usar diretamente
+        if (/^\d{4}-\d{2}-\d{2}$/.test(row.dataInicio)) {
+          dataInicioISO = row.dataInicio;
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(row.dataInicio)) {
+          // Se está no formato dd/mm/yyyy, converter para yyyy-mm-dd
+          const [day, month, year] = row.dataInicio.split('/');
+          dataInicioISO = `${year}-${month}-${day}`;
+        }
+      }
+
       await updateAtividade.mutateAsync({
         id,
         tarefa: row.tarefa,
         responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
         diasPrevistos: row.diasPrevistos,
-        dataInicio: row.dataInicio || undefined,
+        dataInicio: dataInicioISO,
         progresso: row.progresso,
         horasUtilizadas: row.horasUsadas,
         observacoes: row.observacoes || "",
