@@ -9,17 +9,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Zap, Trash2, Edit, Save } from "lucide-react";
+import { Zap, Save, Plus, Trash2, Edit } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -31,519 +22,668 @@ export default function Atividades() {
   const updateAtividade = trpc.atividades.update.useMutation();
   const deleteAtividade = trpc.atividades.delete.useMutation();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAtividade, setEditingAtividade] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    projetoId: 0,
-    tarefa: "",
-    responsaveisTarefa: [] as number[],
-    diasPrevistos: 0,
-    dataInicio: "",
-    horasUtilizadas: 0,
-    progresso: 0,
-    observacoes: "",
+  const [editingRows, setEditingRows] = useState<Record<number, any>>({});
+  const [newRows, setNewRows] = useState<any[]>([]);
+  const [addModal, setAddModal] = useState(false);
+  const [selectedProjeto, setSelectedProjeto] = useState<number | null>(null);
+  const [qtdAtividades, setQtdAtividades] = useState(1);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; tarefa: string }>({ 
+    open: false, id: 0, tarefa: "" 
   });
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
 
-  const openModal = (atividade?: any) => {
-    if (atividade) {
-      setEditingAtividade(atividade);
-      const responsaveisIds = atividade.responsaveisTarefa
-        ? atividade.responsaveisTarefa
-            .split(",")
-            .map((id: string) => parseInt(id.trim()))
-            .filter((id: number) => !isNaN(id))
-        : [];
+  const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
+  const projetosAtivos = projetos || [];
 
-      setFormData({
-        projetoId: atividade.projetoId || 0,
-        tarefa: atividade.tarefa || "",
-        responsaveisTarefa: responsaveisIds,
-        diasPrevistos: atividade.diasPrevistos || 0,
-        dataInicio: atividade.dataInicio
-          ? new Date(atividade.dataInicio).toISOString().split("T")[0]
-          : "",
-        horasUtilizadas: atividade.horasUtilizadas || 0,
-        progresso: atividade.progresso || 0,
-        observacoes: atividade.observacoes || "",
-      });
-    } else {
-      setEditingAtividade(null);
-      setFormData({
-        projetoId: 0,
-        tarefa: "",
-        responsaveisTarefa: [],
-        diasPrevistos: 0,
-        dataInicio: "",
-        horasUtilizadas: 0,
-        progresso: 0,
-        observacoes: "",
-      });
+  // Calcular resumo
+  const totalAtividades = (atividades?.length || 0) + newRows.length;
+  const atividadesConcluidas = atividades?.filter((a) => a.progresso === 100).length || 0;
+
+  const openAddModal = () => {
+    if (projetosAtivos.length === 0) {
+      toast.error("Cadastre pelo menos um projeto antes de adicionar atividades!");
+      return;
     }
-    setErrors({});
-    setIsModalOpen(true);
+    setAddModal(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingAtividade(null);
-    setErrors({});
-  };
-
-  const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: false }));
-    }
-  };
-
-  const toggleResponsavel = (pessoaId: number) => {
-    setFormData((prev) => {
-      const updated = prev.responsaveisTarefa.includes(pessoaId)
-        ? prev.responsaveisTarefa.filter((id) => id !== pessoaId)
-        : [...prev.responsaveisTarefa, pessoaId];
-      return { ...prev, responsaveisTarefa: updated };
-    });
-    if (errors.responsaveisTarefa) {
-      setErrors((prev) => ({ ...prev, responsaveisTarefa: false }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, boolean> = {};
-
-    if (!formData.projetoId) newErrors.projetoId = true;
-    if (!formData.tarefa.trim()) newErrors.tarefa = true;
-    if (formData.responsaveisTarefa.length === 0) newErrors.responsaveisTarefa = true;
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validateForm()) {
-      toast.error("❌ Preencha todos os campos obrigatórios!");
+  const createAtividadesFromModal = () => {
+    if (!selectedProjeto || qtdAtividades < 1) {
+      toast.error("Selecione um projeto e a quantidade de atividades!");
       return;
     }
 
-    try {
-      const data = {
-        ...formData,
-        codigo: editingAtividade?.codigo || `ATV${Date.now()}`,
-        responsaveisTarefa: formData.responsaveisTarefa.join(","),
-        quantidadeHoras: formData.diasPrevistos * 7,
-      };
+    const projeto = projetosAtivos.find((p) => p.id === selectedProjeto);
+    if (!projeto) return;
 
-      if (editingAtividade) {
-        await updateAtividade.mutateAsync({
-          id: editingAtividade.id,
-          ...data,
-        });
-        toast.success("Atividade atualizada com sucesso!");
-      } else {
-        await createAtividade.mutateAsync(data);
-        toast.success("Atividade cadastrada com sucesso!");
+    const responsavelNomes = projeto.responsaveis
+      ? projeto.responsaveis
+          .split(",")
+          .map((id: string) => pessoasAtivas.find((p) => p.id === parseInt(id.trim()))?.nome)
+          .filter(Boolean)
+          .join(", ")
+      : "-";
+
+    const novasAtividades = Array.from({ length: qtdAtividades }, (_, index) => ({
+      tempId: Date.now() + index,
+      projetoId: projeto.id,
+      codigoProjeto: projeto.codigo,
+      nomeProjeto: projeto.nome,
+      respProjeto: responsavelNomes,
+      inicioPlanejado: projeto.inicioPlanejado,
+      fimPlanejado: projeto.fimPlanejado,
+      tarefa: "",
+      responsavelId: null,
+      diasPrevistos: 0,
+      dataInicio: "",
+      previsaoEntrega: "",
+      statusPrazo: "Dentro do Prazo",
+      progresso: 0,
+      qtdHoras: 0,
+      horasUsadas: 0,
+      observacoes: "",
+    }));
+
+    setNewRows([...newRows, ...novasAtividades]);
+    setAddModal(false);
+    setSelectedProjeto(null);
+    setQtdAtividades(1);
+    toast.success(`${qtdAtividades} atividade(s) adicionada(s)!`);
+  };
+
+  const updateNewRow = (tempId: number, field: string, value: any) => {
+    setNewRows((rows) =>
+      rows.map((row) => {
+        if (row.tempId === tempId) {
+          const updated = { ...row, [field]: value };
+          
+          // Calcular Prev. Entrega
+          if (field === "dataInicio" || field === "diasPrevistos") {
+            if (updated.dataInicio && updated.diasPrevistos > 0) {
+              const dataInicio = new Date(updated.dataInicio);
+              dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
+              updated.previsaoEntrega = dataInicio.toISOString().split("T")[0];
+            } else {
+              updated.previsaoEntrega = "";
+            }
+          }
+          
+          // Calcular QTD Horas
+          if (field === "diasPrevistos") {
+            updated.qtdHoras = parseInt(updated.diasPrevistos) * 7;
+          }
+          
+          return updated;
+        }
+        return row;
+      })
+    );
+  };
+
+  const updateEditingRow = (id: number, field: string, value: any) => {
+    setEditingRows((prev) => {
+      const updated = { ...(prev[id] || {}), [field]: value };
+      
+      // Calcular Prev. Entrega
+      if (field === "dataInicio" || field === "diasPrevistos") {
+        if (updated.dataInicio && updated.diasPrevistos > 0) {
+          const dataInicio = new Date(updated.dataInicio);
+          dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
+          updated.previsaoEntrega = dataInicio.toISOString().split("T")[0];
+        } else {
+          updated.previsaoEntrega = "";
+        }
       }
-      await refetch();
-      closeModal();
-    } catch (error) {
-      toast.error("Erro ao salvar atividade");
+      
+      // Calcular QTD Horas
+      if (field === "diasPrevistos") {
+        updated.qtdHoras = parseInt(updated.diasPrevistos) * 7;
+      }
+      
+      return { ...prev, [id]: updated };
+    });
+  };
+
+  const startEditing = (atividade: any) => {
+    if (!editingRows[atividade.id]) {
+      setEditingRows((prev) => ({
+        ...prev,
+        [atividade.id]: {
+          ...atividade,
+          dataInicio: atividade.dataInicio
+            ? new Date(atividade.dataInicio as any).toISOString().split("T")[0]
+            : "",
+        },
+      }));
     }
   };
 
-  const handleDelete = async (id: number, tarefa: string) => {
-    if (!confirm(`Deseja realmente excluir a atividade "${tarefa}"?`)) return;
+  const saveNewRow = async (tempId: number) => {
+    const row = newRows.find((r) => r.tempId === tempId);
+    if (!row) return;
+
+    const errors: string[] = [];
+    if (!row.tarefa) errors.push("tarefa");
+    if (!row.responsavelId) errors.push("responsavelId");
+
+    if (errors.length > 0) {
+      setValidationErrors((prev) => ({ ...prev, [tempId]: errors }));
+      toast.error("Preencha todos os campos obrigatórios marcados em vermelho!");
+      return;
+    }
+
+    setValidationErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[tempId];
+      return newErrors;
+    });
 
     try {
-      await deleteAtividade.mutateAsync({ id });
+      await createAtividade.mutateAsync({
+        codigo: `AT${Date.now()}`,
+        projetoId: row.projetoId,
+        tarefa: row.tarefa,
+        responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
+        diasPrevistos: row.diasPrevistos || 0,
+        dataInicio: row.dataInicio || null,
+        progresso: row.progresso || 0,
+        horasUtilizadas: row.horasUsadas || 0,
+        observacoes: row.observacoes || "",
+      });
+      setNewRows((rows) => rows.filter((r) => r.tempId !== tempId));
       await refetch();
-      toast.success("Atividade excluída!");
+      toast.success("Atividade cadastrada!");
     } catch (error) {
-      toast.error("Erro ao excluir atividade");
+      toast.error("Erro ao cadastrar atividade");
     }
   };
 
-  const calcularPrevisaoEntrega = (dataInicio: string, diasPrevistos: number) => {
-    if (!dataInicio || !diasPrevistos) return "-";
-    const data = new Date(dataInicio);
-    data.setDate(data.getDate() + diasPrevistos);
-    return data.toLocaleDateString("pt-BR");
+  const saveAllRows = async () => {
+    for (const row of newRows) {
+      await saveNewRow(row.tempId);
+    }
   };
 
-  const calcularStatusPrazo = (dataInicio: string, diasPrevistos: number, status: string) => {
-    if (!dataInicio || !diasPrevistos) return "Não Iniciado";
-    if (status === "Concluído" || status === "Finalizado") return "Dentro do Prazo";
-    
-    const previsaoEntrega = new Date(dataInicio);
-    previsaoEntrega.setDate(previsaoEntrega.getDate() + diasPrevistos);
-    const hoje = new Date();
-    
-    return hoje > previsaoEntrega ? "Fora do Prazo" : "Dentro do Prazo";
+  const saveEditingRow = async (id: number) => {
+    const row = editingRows[id];
+    if (!row) return;
+
+    try {
+      await updateAtividade.mutateAsync({
+        id,
+        tarefa: row.tarefa,
+        responsaveisTarefa: row.responsavelId ? String(row.responsavelId) : "",
+        diasPrevistos: row.diasPrevistos,
+        dataInicio: row.dataInicio || null,
+        progresso: row.progresso,
+        horasUtilizadas: row.horasUsadas,
+        observacoes: row.observacoes,
+      });
+      setEditingRows((prev) => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
+      await refetch();
+      toast.success("Atividade atualizada!");
+    } catch (error) {
+      toast.error("Erro ao atualizar atividade");
+    }
+  };
+
+  const removeNewRow = (tempId: number) => {
+    setNewRows((rows) => rows.filter((r) => r.tempId !== tempId));
+  };
+
+  const openDeleteModal = (id: number, tarefa: string) => {
+    setDeleteModal({ open: true, id, tarefa });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteAtividade.mutateAsync({ id: deleteModal.id });
+      await refetch();
+      toast.success("Atividade removida!");
+      setDeleteModal({ open: false, id: 0, tarefa: "" });
+    } catch (error) {
+      toast.error("Erro ao remover atividade");
+    }
   };
 
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="text-center py-12">Carregando...</div>
-      </MainLayout>
-    );
-  }
-
-  const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
-  const projetosDisponiveis = projetos || [];
-
-  if (projetosDisponiveis.length === 0) {
-    return (
-      <MainLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-bold text-[#005CA9] flex items-center gap-3">
-              <Zap className="h-8 w-8" />
-              Atividades
-            </h2>
-          </div>
-
-          <div className="border-4 border-[#005CA9] rounded-2xl p-16 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <Zap className="h-20 w-20 text-[#005CA9]/30" />
-              <p className="text-xl text-gray-500 font-medium">
-                Nenhum projeto cadastrado
-              </p>
-              <p className="text-gray-400">
-                Cadastre um projeto primeiro para poder criar atividades
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Carregando...</p>
         </div>
       </MainLayout>
     );
   }
+
+  const allRows = [
+    ...newRows.map((row) => ({ ...row, id: row.tempId, isNew: true })),
+    ...(atividades || []).map((atividade) => {
+      const projeto = projetosAtivos.find((p) => p.id === atividade.projetoId);
+      const responsavelNomes = projeto?.responsaveis
+        ? projeto.responsaveis
+            .split(",")
+            .map((id: string) => pessoasAtivas.find((p) => p.id === parseInt(id.trim()))?.nome)
+            .filter(Boolean)
+            .join(", ")
+        : "-";
+      
+      return {
+        ...atividade,
+        isNew: false,
+        codigoProjeto: projeto?.codigo || "-",
+        nomeProjeto: projeto?.nome || "-",
+        respProjeto: responsavelNomes,
+        inicioPlanejado: projeto?.inicioPlanejado,
+        fimPlanejado: projeto?.fimPlanejado,
+        qtdHoras: (atividade.diasPrevistos || 0) * 7,
+        previsaoEntrega: atividade.dataInicio && atividade.diasPrevistos
+          ? new Date(new Date(atividade.dataInicio).getTime() + atividade.diasPrevistos * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+          : "",
+      };
+    }),
+  ];
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-[#005CA9] flex items-center gap-3">
-            <Zap className="h-8 w-8" />
-            Atividades
-          </h2>
-          <Button
-            onClick={() => openModal()}
-            className="bg-[#F5B800] hover:bg-[#F5B800]/90 text-[#005CA9] font-semibold px-6 py-6 text-lg rounded-xl"
-          >
-            + Nova Atividade
-          </Button>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Zap className="h-8 w-8 text-[#005CA9]" />
+          <h1 className="text-3xl font-bold text-[#005CA9]">Atividades</h1>
         </div>
-
-        {!atividades || atividades.length === 0 ? (
-          <div className="border-4 border-[#005CA9] rounded-2xl p-16 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <Zap className="h-20 w-20 text-[#005CA9]/30" />
-              <p className="text-xl text-gray-500 font-medium">
-                Nenhuma atividade cadastrada
-              </p>
-              <p className="text-gray-400">Clique em "Nova Atividade" para começar</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="px-4 py-2 border-2 border-[#005CA9] rounded-lg bg-white">
+            <span className="text-sm font-medium text-[#005CA9]">
+              Total: {totalAtividades} | Concluídas: {atividadesConcluidas}
+            </span>
           </div>
-        ) : (
-          <div className="border-4 border-[#005CA9] rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[#005CA9] text-white">
-                  <tr>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Cód. Projeto</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Projeto</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Resp. Projeto</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Início Plan.</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Fim Plan.</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Tarefa</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Resp. Tarefa</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">Dias Prev.</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Data Início</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Prev. Entrega</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">Status</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">Status Prazo</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">Progresso %</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">QTD Horas</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">Horas Usadas</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs whitespace-nowrap">Dif. Horas</th>
-                    <th className="px-2 py-3 text-left font-bold uppercase text-xs whitespace-nowrap">Observações</th>
-                    <th className="px-2 py-3 text-center font-bold uppercase text-xs bg-[#F5B800] text-[#005CA9] whitespace-nowrap">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white">
-                  {atividades.map((atividade, index) => {
-                    const projeto = projetosDisponiveis.find((p: any) => p.id === atividade.projetoId);
-                    const responsaveisIds = atividade.responsaveisTarefa
-                      ? atividade.responsaveisTarefa.split(",").map((id: string) => parseInt(id.trim()))
-                      : [];
-                    const responsaveisNomes = responsaveisIds
-                      .map((id: number) => pessoasAtivas.find((p) => p.id === id)?.nome)
-                      .filter(Boolean)
-                      .join(", ");
-
-                    const qtdHoras = (atividade.diasPrevistos || 0) * 7;
-                    const difHoras = qtdHoras - (atividade.horasUtilizadas || 0);
-                    const statusPrazo = calcularStatusPrazo(
-                      atividade.dataInicio as any,
-                      atividade.diasPrevistos || 0,
-                      atividade.status || ""
-                    );
-
-                    const responsaveisProjeto = projeto?.responsaveis
-                      ? projeto.responsaveis
-                          .split(",")
-                          .map((id: string) => pessoasAtivas.find((p) => p.id === parseInt(id.trim()))?.nome)
-                          .filter(Boolean)
-                          .join(", ")
-                      : "-";
-
-                    return (
-                      <tr
-                        key={atividade.id}
-                        className={`border-b-2 border-[#005CA9]/10 hover:bg-blue-50 transition-colors ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                        }`}
-                      >
-                        <td className="px-2 py-2 text-xs">{projeto?.codigo || "-"}</td>
-                        <td className="px-2 py-2 text-xs font-medium max-w-[150px] truncate">{projeto?.nome || "-"}</td>
-                        <td className="px-2 py-2 text-xs max-w-[120px] truncate">{responsaveisProjeto}</td>
-                        <td className="px-2 py-2 text-xs whitespace-nowrap">
-                          {projeto?.inicioPlanejado
-                            ? new Date(projeto.inicioPlanejado as any).toLocaleDateString("pt-BR")
-                            : "-"}
-                        </td>
-                        <td className="px-2 py-2 text-xs whitespace-nowrap">
-                          {projeto?.fimPlanejado
-                            ? new Date(projeto.fimPlanejado as any).toLocaleDateString("pt-BR")
-                            : "-"}
-                        </td>
-                        <td className="px-2 py-2 text-xs max-w-[200px] truncate" title={atividade.tarefa}>{atividade.tarefa}</td>
-                        <td className="px-2 py-2 text-xs max-w-[120px] truncate">{responsaveisNomes || "-"}</td>
-                        <td className="px-2 py-2 text-center text-xs">{atividade.diasPrevistos || "-"}</td>
-                        <td className="px-2 py-2 text-xs whitespace-nowrap">
-                          {atividade.dataInicio
-                            ? new Date(atividade.dataInicio).toLocaleDateString("pt-BR")
-                            : "-"}
-                        </td>
-                        <td className="px-2 py-2 text-xs whitespace-nowrap">
-                          {calcularPrevisaoEntrega(atividade.dataInicio as any, atividade.diasPrevistos || 0)}
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap">
-                            {atividade.status || "Não Iniciado"}
-                          </span>
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <span
-                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                              statusPrazo === "Fora do Prazo"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {statusPrazo}
-                          </span>
-                        </td>
-                        <td className="px-2 py-2 text-center text-xs">{atividade.progresso || 0}%</td>
-                        <td className="px-2 py-2 text-center text-xs whitespace-nowrap">{qtdHoras}h</td>
-                        <td className="px-2 py-2 text-center text-xs whitespace-nowrap">{atividade.horasUtilizadas || 0}h</td>
-                        <td className="px-2 py-2 text-center">
-                          <span
-                            className={`font-semibold text-xs whitespace-nowrap ${
-                              difHoras >= 0 ? "text-green-600" : "text-red-600"
-                            }`}
-                          >
-                            {difHoras >= 0 ? "+" : ""}
-                            {difHoras}h
-                          </span>
-                        </td>
-                        <td className="px-2 py-2 text-xs max-w-[150px] truncate" title={atividade.observacoes || ""}>
-                          {atividade.observacoes || "-"}
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <div className="flex gap-1 justify-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openModal(atividade)}
-                              className="hover:bg-blue-50 p-1 h-auto"
-                            >
-                              <Edit className="h-4 w-4 text-[#005CA9]" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(atividade.id, atividade.tarefa)}
-                              className="hover:bg-red-50 p-1 h-auto"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+          <Button
+            onClick={openAddModal}
+            className="bg-[#005CA9] hover:bg-[#005CA9]/90 text-white font-semibold"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Adicionar Atividade
+          </Button>
+          {newRows.length > 0 && (
+            <Button
+              onClick={saveAllRows}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+            >
+              <Save className="h-5 w-5 mr-2" />
+              Salvar
+            </Button>
+          )}
+        </div>
       </div>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#005CA9]">
-              {editingAtividade ? "Editar Atividade" : "Nova Atividade"}
-            </DialogTitle>
-          </DialogHeader>
+      <div className="bg-white rounded-lg border-2 border-[#005CA9] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#005CA9] text-white">
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Código Projeto</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Projeto</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Resp. Projeto</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Início Plan.</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Fim Plan.</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase bg-[#F5B800] text-black">Tarefa *</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase bg-[#F5B800] text-black">Resp. Tarefa *</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Dias Prev.</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Data Início</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Prev. Entrega</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Status</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Status Prazo</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Progresso %</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">QTD Horas</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Horas Usadas</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Dif. Horas</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Observações</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold uppercase bg-[#F5B800] text-black">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allRows.length === 0 ? (
+                <tr>
+                  <td colSpan={18} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <Zap className="h-16 w-16 text-gray-300" />
+                      <p className="text-gray-500 text-sm">Nenhuma atividade cadastrada</p>
+                      <p className="text-gray-400 text-xs">Clique em "Adicionar Atividade" para começar</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                allRows.map((atividade, index) => {
+                  const isNew = atividade.isNew;
+                  const id = atividade.id;
+                  const isEditing = isNew || !!editingRows[id];
+                  const data = isNew
+                    ? newRows.find((r) => r.tempId === id)
+                    : editingRows[id] || atividade;
 
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="col-span-2">
-              <Label htmlFor="projetoId" className="text-sm font-semibold">
-                Projeto *
-              </Label>
-              <Select
-                value={formData.projetoId.toString()}
-                onValueChange={(value) => handleChange("projetoId", parseInt(value))}
-              >
-                <SelectTrigger className={`mt-1 ${errors.projetoId ? "border-red-500 border-2" : ""}`}>
-                  <SelectValue placeholder="Selecione um projeto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projetosDisponiveis.map((projeto: any) => (
-                    <SelectItem key={projeto.id} value={projeto.id.toString()}>
-                      {projeto.codigo} - {projeto.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  const errors = validationErrors[id] || [];
+                  
+                  const qtdHoras = (data.diasPrevistos || 0) * 7;
+                  const difHoras = qtdHoras - (data.horasUsadas || 0);
+                  const difHorasColor = difHoras >= 0 ? "text-green-600" : "text-red-600";
 
-            <div className="col-span-2">
-              <Label htmlFor="tarefa" className="text-sm font-semibold">
-                Tarefa *
-              </Label>
-              <Textarea
-                id="tarefa"
-                value={formData.tarefa}
-                onChange={(e) => handleChange("tarefa", e.target.value)}
-                className={`mt-1 ${errors.tarefa ? "border-red-500 border-2" : ""}`}
-                placeholder="Descreva a tarefa"
-                rows={3}
-              />
-            </div>
+                  const responsavelNome = pessoasAtivas.find((p) => p.id === data.responsavelId)?.nome || "";
 
-            <div className="col-span-2">
-              <Label className="text-sm font-semibold">Responsáveis da Tarefa *</Label>
-              <div
-                className={`mt-2 border-2 rounded-md p-3 max-h-40 overflow-y-auto ${
-                  errors.responsaveisTarefa ? "border-red-500" : "border-gray-200"
-                }`}
-              >
-                {pessoasAtivas.length === 0 ? (
-                  <p className="text-sm text-gray-500">Nenhuma pessoa cadastrada</p>
-                ) : (
-                  <div className="space-y-2">
-                    {pessoasAtivas.map((pessoa) => (
-                      <label
-                        key={pessoa.id}
-                        className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={formData.responsaveisTarefa.includes(pessoa.id)}
-                          onCheckedChange={() => toggleResponsavel(pessoa.id)}
+                  return (
+                    <tr
+                      key={id}
+                      className={`border-b-2 border-[#005CA9]/10 hover:bg-blue-50 transition-colors ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } ${isNew ? "bg-yellow-50/50" : ""}`}
+                    >
+                      {/* Código Projeto */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs font-mono text-[#005CA9] font-semibold">{data.codigoProjeto}</span>
+                      </td>
+
+                      {/* Projeto */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs font-medium">{data.nomeProjeto}</span>
+                      </td>
+
+                      {/* Resp. Projeto */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs px-2 py-1 bg-[#005CA9] text-white rounded">{data.respProjeto || "-"}</span>
+                      </td>
+
+                      {/* Início Plan. */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs">
+                          {data.inicioPlanejado ? new Date(data.inicioPlanejado).toLocaleDateString("pt-BR") : "-"}
+                        </span>
+                      </td>
+
+                      {/* Fim Plan. */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs">
+                          {data.fimPlanejado ? new Date(data.fimPlanejado).toLocaleDateString("pt-BR") : "-"}
+                        </span>
+                      </td>
+
+                      {/* Tarefa * */}
+                      <td className="px-3 py-2 bg-yellow-50">
+                        <Input
+                          value={data.tarefa || ""}
+                          onChange={(e) =>
+                            isNew
+                              ? updateNewRow(id, "tarefa", e.target.value)
+                              : updateEditingRow(id, "tarefa", e.target.value)
+                          }
+                          className={`h-9 text-xs min-w-[200px] ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("tarefa") ? "border-2 border-red-500" : ""}`}
+                          placeholder="Nome da tarefa"
+                          readOnly={!isEditing}
                         />
-                        <span className="text-sm">{pessoa.nome || `Pessoa ${pessoa.id}`}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+                      </td>
 
+                      {/* Resp. Tarefa * */}
+                      <td className="px-3 py-2 bg-yellow-50">
+                        {isEditing ? (
+                          <select
+                            value={data.responsavelId || ""}
+                            onChange={(e) => {
+                              const value = e.target.value ? parseInt(e.target.value) : null;
+                              isNew
+                                ? updateNewRow(id, "responsavelId", value)
+                                : updateEditingRow(id, "responsavelId", value);
+                            }}
+                            className={`h-9 text-xs border rounded px-2 w-full min-w-[150px] ${errors.includes("responsavelId") ? "border-2 border-red-500" : ""}`}
+                          >
+                            <option value="">Selecionar...</option>
+                            {pessoasAtivas.map((pessoa) => (
+                              <option key={pessoa.id} value={pessoa.id}>
+                                {pessoa.nome}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-xs">{responsavelNome || "-"}</span>
+                        )}
+                      </td>
+
+                      {/* Dias Prev. */}
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          value={data.diasPrevistos || ""}
+                          onChange={(e) =>
+                            isNew
+                              ? updateNewRow(id, "diasPrevistos", e.target.value)
+                              : updateEditingRow(id, "diasPrevistos", e.target.value)
+                          }
+                          className={`h-9 text-xs w-20 ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                          placeholder="0"
+                          readOnly={!isEditing}
+                        />
+                      </td>
+
+                      {/* Data Início */}
+                      <td className="px-3 py-2">
+                        <Input
+                          type="date"
+                          value={data.dataInicio || ""}
+                          onChange={(e) =>
+                            isNew
+                              ? updateNewRow(id, "dataInicio", e.target.value)
+                              : updateEditingRow(id, "dataInicio", e.target.value)
+                          }
+                          className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                          readOnly={!isEditing}
+                        />
+                      </td>
+
+                      {/* Prev. Entrega (calculado) */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                          {data.previsaoEntrega
+                            ? new Date(data.previsaoEntrega).toLocaleDateString("pt-BR")
+                            : "-"}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs">Em Andamento</span>
+                      </td>
+
+                      {/* Status Prazo */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                          {data.statusPrazo || "Dentro do Prazo"}
+                        </span>
+                      </td>
+
+                      {/* Progresso % */}
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          value={data.progresso || 0}
+                          onChange={(e) =>
+                            isNew
+                              ? updateNewRow(id, "progresso", e.target.value)
+                              : updateEditingRow(id, "progresso", e.target.value)
+                          }
+                          className={`h-9 text-xs w-16 ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                          readOnly={!isEditing}
+                        />
+                      </td>
+
+                      {/* QTD Horas (calculado) */}
+                      <td className="px-3 py-2">
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded font-mono">{qtdHoras}</span>
+                      </td>
+
+                      {/* Horas Usadas */}
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          value={data.horasUsadas || 0}
+                          onChange={(e) =>
+                            isNew
+                              ? updateNewRow(id, "horasUsadas", e.target.value)
+                              : updateEditingRow(id, "horasUsadas", e.target.value)
+                          }
+                          className={`h-9 text-xs w-20 ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                          readOnly={!isEditing}
+                        />
+                      </td>
+
+                      {/* Dif. Horas (calculado) */}
+                      <td className="px-3 py-2">
+                        <span className={`text-xs px-2 py-1 font-semibold ${difHorasColor}`}>
+                          {difHoras}
+                        </span>
+                      </td>
+
+                      {/* Observações */}
+                      <td className="px-3 py-2">
+                        <Textarea
+                          value={data.observacoes || ""}
+                          onChange={(e) =>
+                            isNew
+                              ? updateNewRow(id, "observacoes", e.target.value)
+                              : updateEditingRow(id, "observacoes", e.target.value)
+                          }
+                          className={`h-9 text-xs min-w-[200px] resize-none ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                          rows={1}
+                          readOnly={!isEditing}
+                        />
+                      </td>
+
+                      {/* Ações */}
+                      <td className="px-3 py-2 text-center bg-yellow-50">
+                        <div className="flex gap-2 justify-center">
+                          {isEditing && !isNew && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveEditingRow(id);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white h-7 px-2"
+                            >
+                              <Save className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {!isNew && !isEditing && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(atividade);
+                              }}
+                              className="bg-[#005CA9] hover:bg-[#005CA9]/90 text-white h-7 px-2"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {!isNew && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDeleteModal(id, atividade.tarefa);
+                              }}
+                              className="hover:bg-red-50 h-7 px-2"
+                            >
+                              <Trash2 className="h-3 w-3 text-red-600" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal Adicionar Atividades */}
+      <Dialog open={addModal} onOpenChange={setAddModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#005CA9]">Adicionar Atividades</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="diasPrevistos" className="text-sm font-semibold">
-                Dias Previstos
-              </Label>
+              <label className="text-sm font-medium mb-2 block">Projeto *</label>
+              <select
+                value={selectedProjeto || ""}
+                onChange={(e) => setSelectedProjeto(parseInt(e.target.value))}
+                className="w-full h-10 text-sm border rounded px-3"
+              >
+                <option value="">Selecione um projeto...</option>
+                {projetosAtivos.map((projeto) => (
+                  <option key={projeto.id} value={projeto.id}>
+                    {projeto.codigo} - {projeto.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Quantidade de Atividades *</label>
               <Input
-                id="diasPrevistos"
                 type="number"
-                value={formData.diasPrevistos}
-                onChange={(e) => handleChange("diasPrevistos", parseInt(e.target.value) || 0)}
-                className="mt-1"
-                min="0"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="dataInicio" className="text-sm font-semibold">
-                Data Início
-              </Label>
-              <Input
-                id="dataInicio"
-                type="date"
-                value={formData.dataInicio}
-                onChange={(e) => handleChange("dataInicio", e.target.value)}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="horasUtilizadas" className="text-sm font-semibold">
-                Horas Utilizadas
-              </Label>
-              <Input
-                id="horasUtilizadas"
-                type="number"
-                value={formData.horasUtilizadas}
-                onChange={(e) => handleChange("horasUtilizadas", parseInt(e.target.value) || 0)}
-                className="mt-1"
-                min="0"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-semibold">QTD Horas (Calculado)</Label>
-              <Input
-                value={`${formData.diasPrevistos * 7}h`}
-                disabled
-                className="mt-1 bg-gray-100"
-              />
-            </div>
-
-            <div className="col-span-2">
-              <Label htmlFor="observacoes" className="text-sm font-semibold">
-                Observações
-              </Label>
-              <Textarea
-                id="observacoes"
-                value={formData.observacoes}
-                onChange={(e) => handleChange("observacoes", e.target.value)}
-                className="mt-1"
-                placeholder="Informações adicionais"
-                rows={3}
+                min="1"
+                value={qtdAtividades}
+                onChange={(e) => setQtdAtividades(parseInt(e.target.value) || 1)}
+                className="w-full"
               />
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={closeModal}
-              className="border-2 border-gray-300"
+              onClick={() => {
+                setAddModal(false);
+                setSelectedProjeto(null);
+                setQtdAtividades(1);
+              }}
             >
               Cancelar
             </Button>
             <Button
-              onClick={handleSave}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={createAtividadesFromModal}
+              className="bg-[#F5B800] hover:bg-[#F5B800]/90 text-black"
             >
-              <Save className="h-4 w-4 mr-2" />
-              Salvar
+              Criar Atividades
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmação de Exclusão */}
+      <Dialog open={deleteModal.open} onOpenChange={(open) => setDeleteModal({ ...deleteModal, open })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 py-4">
+            Tem certeza que deseja remover a atividade <strong>"{deleteModal.tarefa}"</strong>?
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModal({ open: false, id: 0, tarefa: "" })}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Remover
             </Button>
           </DialogFooter>
         </DialogContent>
