@@ -3,6 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Folder, Save, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -17,6 +25,8 @@ export default function Projetos() {
 
   const [editingRows, setEditingRows] = useState<Record<number, any>>({});
   const [newRows, setNewRows] = useState<any[]>([]);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; nome: string }>({ open: false, id: 0, nome: "" });
+  const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
 
   const pessoasAtivas = pessoas?.filter((p) => p.ativo) || [];
 
@@ -106,15 +116,25 @@ export default function Projetos() {
     const row = newRows.find((r) => r.tempId === tempId);
     if (!row) return;
 
-    if (!row.codigo || !row.nome || !row.descricao || !row.inicioPlanejado || !row.fimPlanejado) {
-      toast.error("Preencha todos os campos obrigatórios!");
+    const errors: string[] = [];
+    if (!row.codigo) errors.push("codigo");
+    if (!row.nome) errors.push("nome");
+    if (!row.descricao) errors.push("descricao");
+    if (!row.inicioPlanejado) errors.push("inicioPlanejado");
+    if (!row.fimPlanejado) errors.push("fimPlanejado");
+    if (row.responsaveis.length === 0) errors.push("responsaveis");
+
+    if (errors.length > 0) {
+      setValidationErrors((prev) => ({ ...prev, [tempId]: errors }));
+      toast.error("Preencha todos os campos obrigatórios marcados em vermelho!");
       return;
     }
 
-    if (row.responsaveis.length === 0) {
-      toast.error("Selecione pelo menos um responsável!");
-      return;
-    }
+    setValidationErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[tempId];
+      return newErrors;
+    });
 
     try {
       await createProjeto.mutateAsync({
@@ -151,19 +171,23 @@ export default function Projetos() {
     }
   };
 
-  const handleDelete = async (id: number, nome: string) => {
-    if (!confirm(`Deseja realmente excluir o projeto "${nome}"?`)) return;
+  const openDeleteModal = (id: number, nome: string) => {
+    setDeleteModal({ open: true, id, nome });
+  };
 
+  const confirmDelete = async () => {
     try {
-      await deleteProjeto.mutateAsync({ id });
+      await deleteProjeto.mutateAsync({ id: deleteModal.id });
       await refetch();
       toast.success("Projeto excluído!");
+      setDeleteModal({ open: false, id: 0, nome: "" });
     } catch (error: any) {
       if (error.message?.includes("atividades")) {
         toast.error("Não é possível excluir projeto com atividades vinculadas!");
       } else {
         toast.error("Erro ao excluir projeto");
       }
+      setDeleteModal({ open: false, id: 0, nome: "" });
     }
   };
 
@@ -255,6 +279,8 @@ export default function Projetos() {
                       .filter(Boolean)
                       .join(", ") || "-";
 
+                    const errors = validationErrors[id] || [];
+
                     return (
                       <tr
                         key={id}
@@ -271,7 +297,7 @@ export default function Projetos() {
                                 ? updateNewRow(id, "codigo", e.target.value)
                                 : updateEditingRow(id, "codigo", e.target.value)
                             }
-                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("codigo") ? "border-2 border-red-500" : ""}`}
                             placeholder="PRJ001"
                             readOnly={!isEditing}
                           />
@@ -285,7 +311,7 @@ export default function Projetos() {
                                 ? updateNewRow(id, "nome", e.target.value)
                                 : updateEditingRow(id, "nome", e.target.value)
                             }
-                            className={`h-9 text-xs min-w-[180px] ${!isEditing ? "border-0 bg-transparent font-medium" : ""}`}
+                            className={`h-9 text-xs min-w-[180px] ${!isEditing ? "border-0 bg-transparent font-medium" : ""} ${errors.includes("nome") ? "border-2 border-red-500" : ""}`}
                             placeholder="Nome do projeto"
                             readOnly={!isEditing}
                           />
@@ -299,7 +325,7 @@ export default function Projetos() {
                                 ? updateNewRow(id, "descricao", e.target.value)
                                 : updateEditingRow(id, "descricao", e.target.value)
                             }
-                            className={`h-9 text-xs min-w-[250px] resize-none ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                            className={`h-9 text-xs min-w-[250px] resize-none ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("descricao") ? "border-2 border-red-500" : ""}`}
                             placeholder="Descrição"
                             rows={1}
                             readOnly={!isEditing}
@@ -315,15 +341,25 @@ export default function Projetos() {
                                   ? updateNewRow(id, "prioridade", e.target.value)
                                   : updateEditingRow(id, "prioridade", e.target.value)
                               }
-                              className="h-9 text-xs border rounded px-2 w-full"
+                              className="h-9 text-xs border rounded px-2 w-full font-semibold"
+                              style={{
+                                color: data.prioridade === "Baixa" ? "#16a34a" : data.prioridade === "Média" ? "#eab308" : data.prioridade === "Alta" ? "#dc2626" : "#000000"
+                              }}
                             >
-                              <option value="Baixa">Baixa</option>
-                              <option value="Média">Média</option>
-                              <option value="Alta">Alta</option>
-                              <option value="Crítica">Crítica</option>
+                              <option value="Baixa" style={{ color: "#16a34a" }}>Baixa</option>
+                              <option value="Média" style={{ color: "#eab308" }}>Média</option>
+                              <option value="Alta" style={{ color: "#dc2626" }}>Alta</option>
+                              <option value="Crítica" style={{ color: "#000000" }}>Crítica</option>
                             </select>
                           ) : (
-                            <span className="text-xs px-2">{data.prioridade}</span>
+                            <span 
+                              className="text-xs px-2 font-semibold"
+                              style={{
+                                color: data.prioridade === "Baixa" ? "#16a34a" : data.prioridade === "Média" ? "#eab308" : data.prioridade === "Alta" ? "#dc2626" : "#000000"
+                              }}
+                            >
+                              {data.prioridade}
+                            </span>
                           )}
                         </td>
 
@@ -333,7 +369,7 @@ export default function Projetos() {
                               <Input
                                 value={responsaveisNomes}
                                 readOnly
-                                className="h-9 text-xs min-w-[180px] cursor-pointer"
+                                className={`h-9 text-xs min-w-[180px] cursor-pointer ${errors.includes("responsaveis") ? "border-2 border-red-500" : ""}`}
                                 placeholder="Selecione..."
                               />
                               <div className="absolute hidden group-hover:block bg-white border-2 border-[#005CA9] rounded-md p-3 z-20 max-h-48 overflow-y-auto shadow-xl top-full left-0 mt-1">
@@ -367,7 +403,7 @@ export default function Projetos() {
                                 ? updateNewRow(id, "inicioPlanejado", e.target.value)
                                 : updateEditingRow(id, "inicioPlanejado", e.target.value)
                             }
-                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("inicioPlanejado") ? "border-2 border-red-500" : ""}`}
                             readOnly={!isEditing}
                           />
                         </td>
@@ -381,7 +417,7 @@ export default function Projetos() {
                                 ? updateNewRow(id, "fimPlanejado", e.target.value)
                                 : updateEditingRow(id, "fimPlanejado", e.target.value)
                             }
-                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""}`}
+                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("fimPlanejado") ? "border-2 border-red-500" : ""}` }
                             readOnly={!isEditing}
                           />
                         </td>
@@ -445,7 +481,7 @@ export default function Projetos() {
                               variant="ghost"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(id, data.nome);
+                                openDeleteModal(id, data.nome);
                               }}
                               className="hover:bg-red-50 h-8 px-2"
                             >
@@ -462,6 +498,36 @@ export default function Projetos() {
           </div>
         )}
       </div>
+
+      <Dialog open={deleteModal.open} onOpenChange={(open) => setDeleteModal({ ...deleteModal, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-red-600">Confirmar Exclusão</DialogTitle>
+            <DialogDescription className="text-base pt-4">
+              Deseja realmente excluir o projeto <strong>"{deleteModal.nome}"</strong>?
+              <br />
+              <br />
+              Esta ação não poderá ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModal({ open: false, id: 0, nome: "" })}
+              className="border-2 border-gray-300"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
