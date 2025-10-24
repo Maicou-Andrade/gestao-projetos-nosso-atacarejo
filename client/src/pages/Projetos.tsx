@@ -461,19 +461,30 @@ export default function Projetos() {
                                 <Save className="h-4 w-4 mr-1" />
                                 Salvar
                               </Button>
-                              {isNew && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isNew) {
                                     removeNewRow(id);
-                                  }}
-                                  className="hover:bg-red-50 h-8 px-2"
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-600" />
-                                </Button>
-                              )}
+                                  } else {
+                                    setEditingRows((prev) => {
+                                      const newState = { ...prev };
+                                      delete newState[id];
+                                      return newState;
+                                    });
+                                    setValidationErrors((prev) => {
+                                      const newErrors = { ...prev };
+                                      delete newErrors[id];
+                                      return newErrors;
+                                    });
+                                  }
+                                }}
+                                className="border-gray-300 hover:bg-gray-100 h-8 px-3"
+                              >
+                                Cancelar
+                              </Button>
                             </div>
                           ) : (
                             <Button
