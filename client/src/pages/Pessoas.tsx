@@ -31,6 +31,9 @@ export default function Pessoas() {
     setor: "",
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: number; nome: string }>({ 
+    open: false, id: 0, nome: "" 
+  });
 
   const openModal = (pessoa?: any) => {
     if (pessoa) {
@@ -118,13 +121,16 @@ export default function Pessoas() {
     }
   };
 
-  const handleDelete = async (id: number, nome: string) => {
-    if (!confirm(`Deseja realmente excluir ${nome}?`)) return;
+  const openDeleteModal = (id: number, nome: string) => {
+    setDeleteModal({ open: true, id, nome });
+  };
 
+  const confirmDelete = async () => {
     try {
-      await deletePessoa.mutateAsync({ id });
+      await deletePessoa.mutateAsync({ id: deleteModal.id });
       await refetch();
       toast.success("Pessoa excluída!");
+      setDeleteModal({ open: false, id: 0, nome: "" });
     } catch (error) {
       toast.error("Erro ao excluir pessoa");
     }
@@ -239,7 +245,7 @@ export default function Pessoas() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(pessoa.id, pessoa.nome)}
+                            onClick={() => openDeleteModal(pessoa.id, pessoa.nome)}
                             className="hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
@@ -358,6 +364,32 @@ export default function Pessoas() {
             >
               <Save className="h-4 w-4 mr-2" />
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmação de Exclusão */}
+      <Dialog open={deleteModal.open} onOpenChange={(open) => setDeleteModal({ ...deleteModal, open })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 py-4">
+            Tem certeza que deseja excluir <strong>"{deleteModal.nome}"</strong>?
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModal({ open: false, id: 0, nome: "" })}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>
