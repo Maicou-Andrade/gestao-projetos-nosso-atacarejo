@@ -26,7 +26,21 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <div className="border-2 border-white/30 rounded-3xl m-4 p-6 bg-[#005CA9]/80 backdrop-blur-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <img src={APP_LOGO} alt="Logo" className="w-20 h-20 rounded-xl bg-white p-2 shadow-lg" style={{ filter: 'brightness(1) contrast(1.2)' }} />
+            <div className="w-20 h-20 rounded-xl bg-white p-2 shadow-lg flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                {/* Sol amarelo */}
+                <circle cx="50" cy="35" r="15" fill="#F5B800" />
+                <rect x="20" y="28" width="8" height="3" fill="#F5B800" rx="1.5" />
+                <rect x="72" y="28" width="8" height="3" fill="#F5B800" rx="1.5" />
+                <rect x="30" y="18" width="3" height="8" fill="#F5B800" rx="1.5" />
+                <rect x="67" y="18" width="3" height="8" fill="#F5B800" rx="1.5" />
+                <rect x="48.5" y="10" width="3" height="8" fill="#F5B800" rx="1.5" />
+                {/* Texto NOSSO */}
+                <text x="50" y="65" fontSize="14" fontWeight="bold" fill="#005CA9" textAnchor="middle">NOSSO</text>
+                {/* Texto ATACAREJO */}
+                <text x="50" y="80" fontSize="10" fontWeight="600" fill="#005CA9" textAnchor="middle">ATACAREJO</text>
+              </svg>
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-white">
                 Sistema de Gerenciamento de Projetos
