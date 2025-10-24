@@ -70,8 +70,8 @@ export default function Atividades() {
       codigoProjeto: projeto.codigo,
       nomeProjeto: projeto.nome,
       respProjeto: responsavelNomes,
-      inicioPlanejado: projeto.inicioPlanejado,
-      fimPlanejado: projeto.fimPlanejado,
+      inicioPlanejado: projeto.inicioPlanejado ? new Date(projeto.inicioPlanejado).toISOString().split('T')[0] : "",
+      fimPlanejado: projeto.fimPlanejado ? new Date(projeto.fimPlanejado).toISOString().split('T')[0] : "",
       tarefa: "",
       responsavelId: null,
       diasPrevistos: 0,
@@ -100,9 +100,13 @@ export default function Atividades() {
           // Calcular Prev. Entrega
           if (field === "dataInicio" || field === "diasPrevistos") {
             if (updated.dataInicio && updated.diasPrevistos > 0) {
-              const dataInicio = new Date(updated.dataInicio + 'T00:00:00');
+              const [ano, mes, dia] = updated.dataInicio.split('-').map(Number);
+              const dataInicio = new Date(ano, mes - 1, dia);
               dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
-              updated.previsaoEntrega = dataInicio.toISOString().split("T")[0];
+              const anoFim = dataInicio.getFullYear();
+              const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
+              const diaFim = String(dataInicio.getDate()).padStart(2, '0');
+              updated.previsaoEntrega = `${anoFim}-${mesFim}-${diaFim}`;
             } else {
               updated.previsaoEntrega = "";
             }
@@ -127,9 +131,13 @@ export default function Atividades() {
       // Calcular Prev. Entrega
       if (field === "dataInicio" || field === "diasPrevistos") {
         if (updated.dataInicio && updated.diasPrevistos > 0) {
-          const dataInicio = new Date(updated.dataInicio + 'T00:00:00');
+          const [ano, mes, dia] = updated.dataInicio.split('-').map(Number);
+          const dataInicio = new Date(ano, mes - 1, dia);
           dataInicio.setDate(dataInicio.getDate() + parseInt(updated.diasPrevistos));
-          updated.previsaoEntrega = dataInicio.toISOString().split("T")[0];
+          const anoFim = dataInicio.getFullYear();
+          const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
+          const diaFim = String(dataInicio.getDate()).padStart(2, '0');
+          updated.previsaoEntrega = `${anoFim}-${mesFim}-${diaFim}`;
         } else {
           updated.previsaoEntrega = "";
         }
@@ -278,14 +286,21 @@ export default function Atividades() {
         codigoProjeto: projeto?.codigo || "-",
         nomeProjeto: projeto?.nome || "-",
         respProjeto: responsavelNomes,
-        inicioPlanejado: projeto?.inicioPlanejado,
-        fimPlanejado: projeto?.fimPlanejado,
+        inicioPlanejado: projeto?.inicioPlanejado ? new Date(projeto.inicioPlanejado).toISOString().split('T')[0] : "",
+        fimPlanejado: projeto?.fimPlanejado ? new Date(projeto.fimPlanejado).toISOString().split('T')[0] : "",
         qtdHoras: (atividade.diasPrevistos || 0) * 7,
         previsaoEntrega: atividade.dataInicio && atividade.diasPrevistos
           ? (() => {
-              const dataInicio = new Date(atividade.dataInicio);
+              const dataStr = typeof atividade.dataInicio === 'string' 
+                ? atividade.dataInicio 
+                : new Date(atividade.dataInicio).toISOString().split('T')[0];
+              const [ano, mes, dia] = dataStr.split('-').map(Number);
+              const dataInicio = new Date(ano, mes - 1, dia);
               dataInicio.setDate(dataInicio.getDate() + atividade.diasPrevistos);
-              return dataInicio.toISOString().split("T")[0];
+              const anoFim = dataInicio.getFullYear();
+              const mesFim = String(dataInicio.getMonth() + 1).padStart(2, '0');
+              const diaFim = String(dataInicio.getDate()).padStart(2, '0');
+              return `${anoFim}-${mesFim}-${diaFim}`;
             })()
           : "",
       };
