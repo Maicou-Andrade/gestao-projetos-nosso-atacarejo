@@ -155,6 +155,25 @@ export default function Projetos() {
     const row = editingRows[id];
     if (!row) return;
 
+    const errors: string[] = [];
+    if (!row.nome) errors.push("nome");
+    if (!row.descricao) errors.push("descricao");
+    if (!row.inicioPlanejado) errors.push("inicioPlanejado");
+    if (!row.fimPlanejado) errors.push("fimPlanejado");
+    if (!row.responsaveis) errors.push("responsaveis");
+
+    if (errors.length > 0) {
+      setValidationErrors((prev) => ({ ...prev, [id]: errors }));
+      toast.error("Preencha todos os campos obrigatórios marcados em vermelho!");
+      return;
+    }
+
+    setValidationErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[id];
+      return newErrors;
+    });
+
     try {
       await updateProjeto.mutateAsync({
         id,
