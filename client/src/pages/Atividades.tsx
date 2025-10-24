@@ -536,8 +536,63 @@ export default function Atividades() {
                       </td>
 
                       {/* Status */}
-                      <td className="px-3 py-2">
-                        <span className="text-xs">Em Andamento</span>
+                      <td className="px-3 py-2 text-xs text-center">
+                        {(() => {
+                          const progresso = data.progresso || 0;
+                          const aprovado = projetoAprovado;
+                          
+                          let statusTexto = "Não Iniciado";
+                          let statusCor = "#dc2626"; // Vermelho
+                          let statusBg = "#fee2e2"; // Vermelho claro fundo
+                          
+                          if (!aprovado) {
+                            statusTexto = "Aguardando Aprovação";
+                            statusCor = "#6b7280"; // Cinza
+                            statusBg = "#f3f4f6";
+                          } else if (progresso === -1) {
+                            statusTexto = "Cancelado";
+                            statusCor = "#ff0000"; // Vermelho Ferrari
+                            statusBg = "#fee2e2";
+                          } else if (progresso === 0) {
+                            statusTexto = "Não Iniciado";
+                            statusCor = "#dc2626"; // Vermelho
+                            statusBg = "#fee2e2";
+                          } else if (progresso === 100) {
+                            statusTexto = "Concluído";
+                            statusCor = "#16a34a"; // Verde
+                            statusBg = "#dcfce7"; // Verde claro fundo
+                          } else if (progresso > 0 && progresso < 100) {
+                            statusTexto = "Em Andamento";
+                            if (progresso <= 20) {
+                              statusCor = "#f87171"; // Vermelho claro
+                              statusBg = "#fee2e2";
+                            } else if (progresso <= 50) {
+                              statusCor = "#fb923c"; // Vermelho mais fraco (laranja)
+                              statusBg = "#ffedd5";
+                            } else if (progresso <= 70) {
+                              statusCor = "#eab308"; // Amarelo
+                              statusBg = "#fef9c3";
+                            } else if (progresso <= 90) {
+                              statusCor = "#facc15"; // Amarelo fraco
+                              statusBg = "#fef9c3";
+                            } else {
+                              statusCor = "#22c55e"; // Verde
+                              statusBg = "#dcfce7";
+                            }
+                          }
+                          
+                          return (
+                            <span
+                              className="px-2 py-1 rounded text-xs font-semibold"
+                              style={{
+                                color: statusCor,
+                                backgroundColor: statusBg,
+                              }}
+                            >
+                              {statusTexto}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Status Prazo */}
