@@ -372,6 +372,8 @@ export default function Atividades() {
                   const difHorasColor = difHoras >= 0 ? "text-green-600" : "text-red-600";
 
                   const responsavelNome = pessoasAtivas.find((p) => p.id === data.responsavelId)?.nome || "";
+                  const projetoVinculado = projetosAtivos.find((p) => p.id === data.projetoId);
+                  const projetoAprovado = projetoVinculado?.aprovacao || false;
 
                   return (
                     <tr
@@ -511,8 +513,10 @@ export default function Atividades() {
                               ? updateNewRow(id, "progresso", e.target.value)
                               : updateEditingRow(id, "progresso", e.target.value)
                           }
-                          className={`h-9 text-xs w-16 ${!isEditing ? "border-0 bg-transparent" : ""}`}
-                          readOnly={!isEditing}
+                          className={`h-9 text-xs w-16 ${!isEditing || !projetoAprovado ? "border-0 bg-transparent" : ""}`}
+                          readOnly={!isEditing || !projetoAprovado}
+                          disabled={!projetoAprovado}
+                          title={!projetoAprovado ? "Progresso só pode ser alterado após aprovação do projeto" : ""}
                         />
                       </td>
 
