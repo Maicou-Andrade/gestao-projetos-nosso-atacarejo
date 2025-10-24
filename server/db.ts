@@ -1,6 +1,6 @@
 import { eq, and, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/vercel-postgres";
+import { sql as vercelSql } from "@vercel/postgres";
 import { 
   InsertUser, 
   users, 
@@ -20,16 +20,11 @@ import {
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: Pool | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
     try {
-      _pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
-      });
-      _db = drizzle(_pool);
+      _db = drizzle(vercelSql);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -88,7 +83,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    // PostgreSQL usa ON CONFLICT em vez de ON DUPLICATE KEY UPDATE
     await db.insert(users).values(values).onConflictDoUpdate({
       target: users.openId,
       set: updateSet,
@@ -265,9 +259,6 @@ export async function deleteSubtarefa(id: number): Promise<void> {
 
 // ===== FUNÇÕES AUXILIARES =====
 
-/**
- * Calcula o progresso de um projeto baseado nas atividades
- */
 export async function calcularProgressoProjeto(projetoId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
@@ -279,11 +270,9 @@ export async function calcularProgressoProjeto(projetoId: number): Promise<numbe
   for (const atividade of atividadesDoProjeto) {
     const subtarefasDaAtividade = await getSubtarefasByAtividadeId(atividade.id);
     if (subtarefasDaAtividade.length > 0) {
-      // Se tem subtarefas, calcula a média das subtarefas
       const somaSubtarefas = subtarefasDaAtividade.reduce((sum, st) => sum + (st.progresso || 0), 0);
       totalProgresso += somaSubtarefas / subtarefasDaAtividade.length;
     } else {
-      // Se não tem subtarefas, usa o progresso da própria atividade
       totalProgresso += atividade.progresso || 0;
     }
   }
@@ -291,9 +280,6 @@ export async function calcularProgressoProjeto(projetoId: number): Promise<numbe
   return Math.round(totalProgresso / atividadesDoProjeto.length);
 }
 
-/**
- * Calcula o progresso de uma atividade baseado nas subtarefas
- */
 export async function calcularProgressoAtividade(atividadeId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
@@ -308,9 +294,6 @@ export async function calcularProgressoAtividade(atividadeId: number): Promise<n
   return Math.round(somaSubtarefas / subtarefasDaAtividade.length);
 }
 
-/**
- * Determina o status baseado no progresso
- */
 export function calcularStatus(progresso: number): string {
   if (progresso === -1) return "Cancelado";
   if (progresso === 0) return "Não Iniciado";
@@ -319,11 +302,6 @@ export function calcularStatus(progresso: number): string {
   return "Não Iniciado";
 }
 
-
-
-/**
- * Calcula todas as estatísticas de um projeto baseado nas atividades
- */
 export async function calcularEstatisticasProjeto(projetoId: number) {
   const db = await getDb();
   if (!db) return null;
@@ -336,16 +314,13 @@ export async function calcularEstatisticasProjeto(projetoId: number) {
   const naoIniciado = atividadesDoProjeto.filter(a => a.status === "Não Iniciado").length;
   const cancelado = atividadesDoProjeto.filter(a => a.status === "Cancelado").length;
   
-  // Calcular total de horas
   const qtdHoras = atividadesDoProjeto.reduce((sum, a) => sum + (a.quantidadeHoras || 0), 0);
   
-  // Início Real (menor dataInicio das atividades)
   const datasInicio = atividadesDoProjeto
     .filter(a => a.dataInicio)
     .map(a => new Date(a.dataInicio!).getTime());
   const inicioReal = datasInicio.length > 0 ? new Date(Math.min(...datasInicio)) : null;
   
-  // Fim Previsto (maior dataInicio + diasPrevistos)
   let fimPrevisto: Date | null = null;
   for (const atividade of atividadesDoProjeto) {
     if (atividade.dataInicio && atividade.diasPrevistos) {
@@ -357,10 +332,8 @@ export async function calcularEstatisticasProjeto(projetoId: number) {
     }
   }
   
-  // Calcular progresso geral
   const progressoGeral = await calcularProgressoProjeto(projetoId);
   
-  // Calcular status de prazo (dentro/fora do prazo)
   const hoje = new Date();
   let dentroPrazo = 0;
   let foraPrazo = 0;
