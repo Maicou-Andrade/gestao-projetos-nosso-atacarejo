@@ -30,9 +30,22 @@ const formatDateToInput = (brDate: string): string => {
   return `${year}-${month}-${day}`;
 };
 
-const formatInputToBR = (inputDate: string): string => {
+const formatInputToBR = (inputDate: string | Date | null | undefined): string => {
   if (!inputDate) return "";
-  const [year, month, day] = inputDate.split('-');
+  
+  // Se for um objeto Date, converter para string ISO
+  let dateStr = inputDate;
+  if (inputDate instanceof Date) {
+    dateStr = inputDate.toISOString().split('T')[0];
+  }
+  
+  // Garantir que é uma string antes de fazer split
+  if (typeof dateStr !== 'string') return "";
+  
+  // Verificar se está no formato yyyy-mm-dd
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return "";
+  
+  const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
 };
 
