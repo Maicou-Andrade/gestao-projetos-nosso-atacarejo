@@ -418,31 +418,41 @@ export default function Projetos() {
                         </td>
 
                         <td className="px-3 py-2">
-                          <Input
-                            type="date"
-                            value={data.inicioPlanejado || ""}
-                            onChange={(e) =>
-                              isNew
-                                ? updateNewRow(id, "inicioPlanejado", e.target.value)
-                                : updateEditingRow(id, "inicioPlanejado", e.target.value)
-                            }
-                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("inicioPlanejado") ? "border-2 border-red-500" : ""}`}
-                            readOnly={!isEditing}
-                          />
+                          {isEditing ? (
+                            <Input
+                              type="date"
+                              value={data.inicioPlanejado || ""}
+                              onChange={(e) =>
+                                isNew
+                                  ? updateNewRow(id, "inicioPlanejado", e.target.value)
+                                  : updateEditingRow(id, "inicioPlanejado", e.target.value)
+                              }
+                              className={`h-9 text-xs ${errors.includes("inicioPlanejado") ? "border-2 border-red-500" : ""}`}
+                            />
+                          ) : (
+                            <span className="text-xs">
+                              {data.inicioPlanejado ? formatDateToBR(data.inicioPlanejado) : "-"}
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-3 py-2">
-                          <Input
-                            type="date"
-                            value={data.fimPlanejado || ""}
-                            onChange={(e) =>
-                              isNew
-                                ? updateNewRow(id, "fimPlanejado", e.target.value)
-                                : updateEditingRow(id, "fimPlanejado", e.target.value)
-                            }
-                            className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""} ${errors.includes("fimPlanejado") ? "border-2 border-red-500" : ""}` }
-                            readOnly={!isEditing}
-                          />
+                          {isEditing ? (
+                            <Input
+                              type="date"
+                              value={data.fimPlanejado || ""}
+                              onChange={(e) =>
+                                isNew
+                                  ? updateNewRow(id, "fimPlanejado", e.target.value)
+                                  : updateEditingRow(id, "fimPlanejado", e.target.value)
+                              }
+                              className={`h-9 text-xs ${errors.includes("fimPlanejado") ? "border-2 border-red-500" : ""}`}
+                            />
+                          ) : (
+                            <span className="text-xs">
+                              {data.fimPlanejado ? formatDateToBR(data.fimPlanejado) : "-"}
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-3 py-2 text-center">

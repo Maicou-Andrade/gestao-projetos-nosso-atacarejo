@@ -510,17 +510,22 @@ export default function Atividades() {
 
                       {/* Data Início */}
                       <td className="px-3 py-2">
-                        <Input
-                          type="date"
-                          value={data.dataInicio || ""}
-                          onChange={(e) =>
-                            isNew
-                              ? updateNewRow(id, "dataInicio", e.target.value)
-                              : updateEditingRow(id, "dataInicio", e.target.value)
-                          }
-                          className={`h-9 text-xs ${!isEditing ? "border-0 bg-transparent" : ""}`}
-                          readOnly={!isEditing}
-                        />
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={data.dataInicio || ""}
+                            onChange={(e) =>
+                              isNew
+                                ? updateNewRow(id, "dataInicio", e.target.value)
+                                : updateEditingRow(id, "dataInicio", e.target.value)
+                            }
+                            className="h-9 text-xs"
+                          />
+                        ) : (
+                          <span className="text-xs">
+                            {data.dataInicio ? formatInputToBR(data.dataInicio) : "-"}
+                          </span>
+                        )}
                       </td>
 
                       {/* Prev. Entrega (calculado) */}
